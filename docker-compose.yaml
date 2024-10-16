@@ -1,0 +1,110 @@
+services:
+  backend:
+    image: backend:latest  # Replace with your actual backend image name
+    build:
+      context: ./backend  # Path to your backend Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "3500:3500"  # Map the backend port to the host
+    volumes:
+      - backend_data:/app/data  # Optional for backend data persistence
+    networks:
+      - mern_todo_app_napa-network
+    environment:
+      - NODE_ENV=production
+      - DB_URL=mongodb+srv://kingsamuel412:RpB5Hq1QTiL0ngI4@revers.vjsds.mongodb.net/?retryWrites=true&w=majority&appName=revers
+    depends_on:
+      - mongo  # Ensure MongoDB starts before the backend
+
+  frontend:
+    image: frontend:latest  # Replace with your actual frontend image name
+    build:
+      context: ./frontend  # Path to your frontend Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"  # Map the frontend port to the host
+    depends_on:
+      - backend  # Ensure the backend starts before the frontend
+    networks:
+      - mern_todo_app_napa-network
+
+  mongo:
+    image: mongo:latest  # Use the official MongoDB image
+    volumes:
+      - mongo_data:/data/db  # Persist MongoDB data
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root  # Set root user
+      - MONGO_INITDB_ROOT_PASSWORD=password  # Set root password
+    networks:
+      - mern_todo_app_napa-network
+
+  mongo-exporter:
+    image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
+    environment:
+      - MONGODB_URI=mongodb://root:password@mongo:27017/admin  # Connection string for MongoDB
+    ports:
+      - "9216:9216"  # Expose MongoDB Exporter metrics on port 9216
+    depends_on:
+      - mongo
+    networks:
+      - mern_todo_app_napa-network
+
+  prometheus:
+    image: prom/prometheus:v2.45.3
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - --web.enable-remote-write-receiver
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - mern_todo_app_napa-network           # Ensure Prometheus is on the same network
+
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    networks:
+      - mern_todo_app_napa-network  # Ensure Node Exporter is on the same network
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0  # Correct indentation here
+    restart: unless-stopped
+    volumes:
+      - /home/melvin/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml  # Ensure it's a list
+    ports:
+      - "9093:9093"
+    networks:
+      - mern_todo_app_napa-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - mern_todo_app_napa-network  # Ensure Grafana is on the same network
+
+networks:
+  mern_todo_app_napa-network:
+    driver: bridge
+
+volumes:
+  backend_data:
+  mongo_data:
+  grafana-data:  # Add a volume for Grafana
