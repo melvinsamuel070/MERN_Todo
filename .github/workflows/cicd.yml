@@ -11,13 +11,14 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9093/api/v1/alerts  # Local Alertmanager URL
-  EMAIL_API_URL: ${{ secrets.EMAIL_API_URL }}  # Email API endpoint
+  # EMAIL_API_URL: ${{ secrets.EMAIL_API_URL }}  # Email API end
   EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}  # Email username
   EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # Email password
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}  # Docker Hub username
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Docker Hub password
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}  # Updated Docker Hub token
   PROMETHEUS_URL: http://localhost:9090/api/v1/alerts  # Local Prometheus URL
-  GRAFANA_URL: http://localhost:3000/api/annotations  # Local Grafana URL
+  GRAFANA_URL: http://localhost:3001/api/annotations  # Local Grafana URL
   GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}  # Grafana API Key
   ALB_DNS_NAME: your-alb-dns-name  # Replace with your ALB DNS name
   AWS_REGION: us-east-1  # Your AWS region
@@ -66,10 +67,10 @@ jobs:
         run: |
           curl -X POST -H "Content-Type: application/json" -u "${{ env.EMAIL_USERNAME }}:${{ env.EMAIL_PASSWORD }}" -d '{
             "personalizations": [{
-              "to": [{"email": "recipient@example.com"}],
+              "to": [{"email": "kingsamuel412@mail.com"}],
               "subject": "Build Successful"
             }],
-            "from": {"email": "sender@example.com"},
+            "from": {"email": "melvinsamuel070@gmail.com"},
             "content": [{
               "type": "text/plain",
               "value": "The latest build was successful."
@@ -103,7 +104,7 @@ jobs:
     steps:
       - name: Deploy with Docker Compose
         run: |
-          cd /path/to/docker-compose  # Change this to your local path
+          cd /home/melvin/MERN_Todo_app/docker-compose  # Change this to your local path
           docker compose pull
           docker compose up -d
 
@@ -122,10 +123,10 @@ jobs:
         run: |
           curl -X POST -H "Content-Type: application/json" -u "${{ env.EMAIL_USERNAME }}:${{ env.EMAIL_PASSWORD }}" -d '{
             "personalizations": [{
-              "to": [{"email": "recipient@example.com"}],
+              "to": [{"email": "kingsamuel412@mail.com"}],
               "subject": "Deployment Successful"
             }],
-            "from": {"email": "sender@example.com"},
+            "from": {"email": "melvinsamuel070@mail.com"},
             "content": [{
               "type": "text/plain",
               "value": "The application was successfully deployed."

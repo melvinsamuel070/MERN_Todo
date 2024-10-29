@@ -1,21 +1,18 @@
 global:
   resolve_timeout: 5m
-  smtp_hello: 23.21.83.242
+  smtp_hello: "localhost"
   smtp_require_tls: true
 
 route:
   receiver: email
 
 receivers:
-- name: email
-  email_configs:
-  - send_resolved: false
-    to: kingsamuel412@gmail.com
-    from: melvinsamuel070@gmail.com
-    smarthost: smtp.gmail.com:587  # Use the correct Gmail SMTP server and port
-    auth_username: melvinsamuel070@gmail.com
-    auth_password: ttsp jbip dovk zxed  # Ensure this is correct, and handle this securely!
-    require_tls: true
-
-
-        
+  - name: email
+    email_configs:
+      - send_resolved: false
+        to: kingsamuel412@gmail.com
+        from: melvinsamuel070@gmail.com
+        smarthost: smtp.gmail.com:587
+        auth_username: melvinsamuel070@gmail.com
+        auth_password: "zihv khej dtsh ostz"  # Reference an environment variable
+        require_tls: true
