@@ -1,0 +1,52 @@
+groups:
+- name: test-alerts
+  rules:
+    # Alert for a generic application instance
+    - alert: InstanceDown
+      expr: up{job="my_app"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Instance {{ $labels.instance }} is down"
+        description: "Prometheus has detected that instance {{ $labels.instance }} is down for more than 1 minute."
+
+    # Alert for Prometheus instance
+    - alert: PrometheusDown
+      expr: up{job="mern_todo_app-prometheus-1"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Prometheus instance is down"
+        description: "Prometheus at {{ $labels.instance }} has been down for more than 1 minute."
+
+    # Alert for Node Exporter
+    - alert: NodeExporterDown
+      expr: up{job="mern_todo_app-node-exporter-1"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Node Exporter instance is down"
+        description: "Node Exporter at {{ $labels.instance }} has been down for more than 1 minute."
+
+    # Alert for Backend application
+    - alert: BackendDown
+      expr: up{job="mern_todo_app-backend-1"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Backend instance is down"
+        description: "Backend at {{ $labels.instance }} has been down for more than 1 minute."
+
+    # Alert for MongoDB Exporter
+    - alert: MongoExporterDown
+      expr: up{job="mern_todo_app-mongo-exporter-1"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "MongoDB Exporter is down"
+        description: "MongoDB Exporter at {{ $labels.instance }} has been down for more than 1 minute."

@@ -11,7 +11,7 @@ EXPOSE 3000
 
 
 ## The Second build stage
-FROM node:18-alpine AS prod_build
+FROM node:16-alpine AS prod_build
 
 WORKDIR /home/app
 

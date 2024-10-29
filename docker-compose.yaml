@@ -1,6 +1,17 @@
 services:
+  mongo:
+    image: mongo  # Use the official MongoDB image
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root  # Root username for MongoDB
+      MONGO_INITDB_ROOT_PASSWORD: password  # Root password for MongoDB
+    volumes:
+      - mongo_data:/data/db  # Persist MongoDB data
+    networks:
+      - mern_todo_app_napa-network  # Ensure MongoDB is on the same network
+
   backend:
-    image: backend:latest  # Replace with your actual backend image name
+    image: melvinsamuel070/backend:latest  # Replace with your actual backend image name
     build:
       context: ./backend  # Path to your backend Dockerfile
       dockerfile: Dockerfile
@@ -12,29 +23,19 @@ services:
       - mern_todo_app_napa-network
     environment:
       - NODE_ENV=production
-      - DB_URL=mongodb+srv://kingsamuel412:RpB5Hq1QTiL0ngI4@revers.vjsds.mongodb.net/?retryWrites=true&w=majority&appName=revers
+      - DB_URL=mongodb://root:password@mongo:27017/  # Update to use local MongoDB connection
     depends_on:
       - mongo  # Ensure MongoDB starts before the backend
 
   frontend:
-    image: frontend:latest  # Replace with your actual frontend image name
+    image: melvinsamuel070/frontend1:latest  # Replace with your actual frontend image name
     build:
       context: ./frontend  # Path to your frontend Dockerfile
       dockerfile: Dockerfile
     ports:
-      - "3001:3000"  # Map the frontend port to the host
+      - "3000:3000"  # Map the frontend port to the host
     depends_on:
       - backend  # Ensure the backend starts before the frontend
-    networks:
-      - mern_todo_app_napa-network
-
-  mongo:
-    image: mongo:latest  # Use the official MongoDB image
-    volumes:
-      - mongo_data:/data/db  # Persist MongoDB data
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root  # Set root user
-      - MONGO_INITDB_ROOT_PASSWORD=password  # Set root password
     networks:
       - mern_todo_app_napa-network
 
@@ -42,8 +43,6 @@ services:
     image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
     environment:
       - MONGODB_URI=mongodb://root:password@mongo:27017/admin  # Connection string for MongoDB
-    ports:
-      - "9216:9216"  # Expose MongoDB Exporter metrics on port 9216
     depends_on:
       - mongo
     networks:
@@ -60,7 +59,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - mern_todo_app_napa-network           # Ensure Prometheus is on the same network
+      - mern_todo_app_napa-network  # Ensure Prometheus is on the same network
 
   node-exporter:
     image: prom/node-exporter:v1.7.0
@@ -80,12 +79,10 @@ services:
       - mern_todo_app_napa-network  # Ensure Node Exporter is on the same network
 
   alertmanager:
-    image: prom/alertmanager:v0.27.0  # Correct indentation here
+    image: prom/alertmanager:v0.27.0
     restart: unless-stopped
     volumes:
-      - /home/melvin/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml  # Ensure it's a list
-    ports:
-      - "9093:9093"
+      - /home/melvin/mybash-bash/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml  # Ensure it's a list
     networks:
       - mern_todo_app_napa-network
 
@@ -93,7 +90,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
     restart: unless-stopped
@@ -106,5 +103,6 @@ networks:
 
 volumes:
   backend_data:
-  mongo_data:
+  mongo_data:  # Add a volume for MongoDB
   grafana-data:  # Add a volume for Grafana
+

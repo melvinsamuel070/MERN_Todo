@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s  # How frequently to scrape targets
+  evaluation_interval: 10s  # How frequently to evaluate rules
+
+rule_files:
+  - rules.yml  # External rules file
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'mern_todo_app-alertmanager-1:9093'  # Pointing to the Alertmanager container
+
+scrape_configs:
+  # Scrape configuration for Prometheus itself
+  - job_name: mern_todo_app-prometheus-1
+    static_configs:
+      - targets:
+          - 'mern_todo_app-prometheus-1:9090'  # Monitoring Prometheus
+
+  # Scrape configuration for Node Exporter (system-level metrics)
+  - job_name: mern_todo_app-node-exporter-1
+    static_configs:
+      - targets:
+          - 'mern_todo_app-node-exporter-1:9100'  # Monitoring Node Exporter
+
+  # Scrape configuration for the backend application
+  - job_name: mern_todo_app-backend-1
+    static_configs:
+      - targets:
+          - 'mern_todo_app-backend-1:3500'  # Monitoring the backend service
+
+  # Scrape configuration for MongoDB Exporter (MongoDB metrics)
+  - job_name: mern_todo_app-mongo-exporter-1
+    static_configs:
+      - targets:
+          - 'mern_todo_app-mongo-exporter-1:9216'  # Monitoring MongoDB Exporter
+
+  

@@ -26,7 +26,7 @@ function TodoItem({ todo, index, moveTodo, setData }) {
 
     const deleteTodo = async (id) => {
         try {
-            let response = await axios.delete(`http://localhost:3500/todo/${id}`)
+            let response = await axios.delete(`http://23.21.83.242:3500/todo/${id}`)
             if(response.data.status){
                 setData(response.data.data)
             }
@@ -37,7 +37,7 @@ function TodoItem({ todo, index, moveTodo, setData }) {
 
     const completeTodo = async (id) => {
         try {
-            let response = await axios.put(`http://localhost:3500/todo/${id}`)
+            let response = await axios.put(`http://23.21.83.242:3500/todo/${id}`)
             if(response.data.status){
                 setData(response.data.data)
             }
