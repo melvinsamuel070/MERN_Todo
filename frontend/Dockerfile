@@ -16,7 +16,7 @@ FROM node:16-alpine AS prod_build
 WORKDIR /home/app
 
 
-COPY --from=BUILD_IMAGE /home/app/build/ /home/app/build/
+COPY --from=build_image /home/app/build/ /home/app/build/
 
 COPY package.json .
 
