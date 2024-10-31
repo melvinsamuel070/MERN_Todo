@@ -8,7 +8,7 @@ services:
     volumes:
       - mongo_data:/data/db  # Persist MongoDB data
     networks:
-      - mern_todo_app_napa-network  # Ensure MongoDB is on the same network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure MongoDB is on the same network
 
   backend:
     image: melvinsamuel070/backend:latest  # Replace with your actual backend image name
@@ -20,7 +20,7 @@ services:
     volumes:
       - backend_data:/app/data  # Optional for backend data persistence
     networks:
-      - mern_todo_app_napa-network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
     environment:
       - NODE_ENV=production
       - DB_URL=mongodb://root:password@mongo:27017/  # Update to use local MongoDB connection
@@ -37,7 +37,7 @@ services:
     depends_on:
       - backend  # Ensure the backend starts before the frontend
     networks:
-      - mern_todo_app_napa-network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
 
   mongo-exporter:
     image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
@@ -46,7 +46,7 @@ services:
     depends_on:
       - mongo
     networks:
-      - mern_todo_app_napa-network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
 
   prometheus:
     image: prom/prometheus:v2.45.3
@@ -59,7 +59,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - mern_todo_app_napa-network  # Ensure Prometheus is on the same network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
 
   node-exporter:
     image: prom/node-exporter:v1.7.0
@@ -76,7 +76,7 @@ services:
     ports:
       - "9100:9100"
     networks:
-      - mern_todo_app_napa-network  # Ensure Node Exporter is on the same network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Node Exporter is on the same network
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
@@ -86,7 +86,8 @@ services:
     volumes:
       - /home/melvin/mybash-bash/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
-      - mern_todo_app_napa-network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
 
   grafana:
     image: grafana/grafana:latest
@@ -97,10 +98,10 @@ services:
       - grafana-data:/var/lib/grafana
     restart: unless-stopped
     networks:
-      - mern_todo_app_napa-network  # Ensure Grafana is on the same network
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Grafana is on the same network
 
 networks:
-  mern_todo_app_napa-network:
+  mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
     driver: bridge
 
 volumes:
