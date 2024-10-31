@@ -10,7 +10,7 @@ on:
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9093/api/v2/alerts  # Updated to the new API endpoint
+  ALERTMANAGER_URL: http://localhost:9093/api/v2/alerts  # Updated Alertmanager URL
   EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}  # Email username
   EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # Email password
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}  # Docker Hub username
@@ -56,17 +56,12 @@ jobs:
 
       - name: Notify Alertmanager of Build Success
         run: |
-          curl -i -X POST -H "Content-Type: application/json" -d '[
+          curl -X POST -H "Content-Type: application/json" -d '[
             {
-              "status": "firing",
-              "labels": {
-                "alertname": "BuildSuccess",
-                "severity": "info"
-              },
-              "annotations": {
-                "summary": "Build Successful",
-                "description": "The latest build was successful."
-              }
+              "alertname": "BuildSuccess",
+              "severity": "info",
+              "summary": "CI/CD Build Successful",
+              "description": "The latest build was successful."
             }
           ]' ${{ env.ALERTMANAGER_URL }}
 
@@ -117,17 +112,12 @@ jobs:
 
       - name: Notify Alertmanager of Deployment Success
         run: |
-          curl -i -X POST -H "Content-Type: application/json" -d '[
+          curl -X POST -H "Content-Type: application/json" -d '[
             {
-              "status": "firing",
-              "labels": {
-                "alertname": "DeploymentSuccess",
-                "severity": "info"
-              },
-              "annotations": {
-                "summary": "Deployment Successful",
-                "description": "The application was successfully deployed."
-              }
+              "alertname": "DeploymentSuccess",
+              "severity": "info",
+              "summary": "Deployment Successful",
+              "description": "The application was successfully deployed."
             }
           ]' ${{ env.ALERTMANAGER_URL }}
 
@@ -175,11 +165,11 @@ jobs:
     steps:
       - name: Run Status Check and Notify
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{
-            "alerts": [{
+          curl -X POST -H "Content-Type: application/json" -d '[
+            {
               "alertname": "StatusNotification",
               "severity": "info",
               "summary": "Scheduled Status Update",
               "description": "Automated status check running every 2 minutes."
-            }]
-          }' ${{ env.ALERTMANAGER_URL }}
+            }
+          ]' ${{ env.ALERTMANAGER_URL }}
