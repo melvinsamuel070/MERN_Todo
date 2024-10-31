@@ -9,7 +9,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - 'mern_todo_app-alertmanager-1:9093'  # Pointing to the Alertmanager container
+            - 'locahost:9093'  # Pointing to the Alertmanager container
 
 scrape_configs:
   # Scrape configuration for Prometheus itself
