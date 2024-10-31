@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '*/2 * * * *'  # Run every 2 minutes for cron job notifications
+    - cron: '*/1 * * * *'  # Run every 1 minutes for cron job notifications
 
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
@@ -170,7 +170,7 @@ jobs:
               "alertname": "StatusNotification",
               "severity": "info",
               "summary": "Scheduled Status Update",
-              "description": "Automated status check running every 2 minutes."
+              "description": "Automated status check running every 1 minutes."
             }
           ]' ${{ env.ALERTMANAGER_URL }}
 
