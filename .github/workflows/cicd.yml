@@ -10,13 +10,13 @@ on:
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://mern_todo_app-alertmanager-1:9093/api/v2/alerts  # Updated Alertmanager URL
+  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts  # Updated Alertmanager URL
   EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}  # Email username
   EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # Email password
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}  # Docker Hub username
   DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Docker Hub password
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}  # Updated Docker Hub token
-  PROMETHEUS_URL: http://mern_todo_app-prometheus-1:9090/api/v1/alerts  # Local Prometheus URL
+  PROMETHEUS_URL: http://localhost:9090/api/v1/alerts  # Local Prometheus URL
   GRAFANA_URL: http://localhost:3001/api/annotations  # Local Grafana URL
   GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}  # Grafana API Key
   ALB_DNS_NAME: your-alb-dns-name  # Replace with your ALB DNS name
@@ -56,21 +56,21 @@ jobs:
 
       - name: Start Alertmanager
         run: |
-          docker run -d --name alertmanager -p 9093:9093 \
+          docker run -d --name alertmanager -p 9092:9093 \
           -v ./alertmanager:/alertmanager \
           prom/alertmanager
-
+        
       - name: Wait for Alertmanager to be ready
         run: |
           for i in {1..10}; do 
-            if curl -s -f ${{ env.ALERTMANAGER_URL }}; then 
+            if curl -s -f http://localhost:9092; then 
               echo "Alertmanager is up and running!"; 
               break; 
             fi; 
             echo "Waiting for Alertmanager to be ready..."; 
             sleep 6; 
           done
-
+        
       - name: Notify Alertmanager of Build Success
         run: |
           curl -X POST -H "Content-Type: application/json" -d '[
@@ -80,8 +80,8 @@ jobs:
               "summary": "CI/CD Build Successful",
               "description": "The latest build was successful."
             }
-          ]' ${{ env.ALERTMANAGER_URL }}
-
+          ]' http://localhost:9092/api/v2/alerts
+        
       - name: Send Email Notification of Build Success
         run: |
           curl -X POST -H "Content-Type: application/json" -u "${{ env.EMAIL_USERNAME }}:${{ env.EMAIL_PASSWORD }}" -d '{
@@ -95,7 +95,7 @@ jobs:
               "value": "The latest build was successful."
             }]
           }' ${{ env.EMAIL_API_URL }}
-
+        
       - name: Notify Prometheus of Build Success
         run: |
           curl -X POST -H "Content-Type: application/json" -d '{
@@ -106,7 +106,7 @@ jobs:
               "description": "The latest build was successful."
             }]
           }' ${{ env.PROMETHEUS_URL }}
-
+        
       - name: Annotate Grafana with Build Success
         run: |
           curl -X POST -H "Authorization: Bearer ${{ env.GRAFANA_API_KEY }}" -H "Content-Type: application/json" -d '{
@@ -115,7 +115,7 @@ jobs:
             "tags": ["build"],
             "text": "The latest build was successful."
           }' ${{ env.GRAFANA_URL }}
-
+        
   # Job to deploy the application
   deploy:
     runs-on: ubuntu-latest
@@ -126,7 +126,7 @@ jobs:
           cd /home/melvin/MERN_Todo_app/docker-compose  # Change this to your local path
           docker compose pull
           docker compose up -d
-
+        
       - name: Notify Alertmanager of Deployment Success
         run: |
           curl -X POST -H "Content-Type: application/json" -d '[
@@ -136,8 +136,8 @@ jobs:
               "summary": "Deployment Successful",
               "description": "The application was successfully deployed."
             }
-          ]' ${{ env.ALERTMANAGER_URL }}
-
+          ]' http://localhost:9092/api/v2/alerts
+        
       - name: Send Email Notification of Deployment Success
         run: |
           curl -X POST -H "Content-Type: application/json" -u "${{ env.EMAIL_USERNAME }}:${{ env.EMAIL_PASSWORD }}" -d '{
@@ -151,7 +151,7 @@ jobs:
               "value": "The application was successfully deployed."
             }]
           }' ${{ env.EMAIL_API_URL }}
-
+        
       - name: Notify Prometheus of Deployment Success
         run: |
           curl -X POST -H "Content-Type: application/json" -d '{
@@ -162,7 +162,7 @@ jobs:
               "description": "The application was successfully deployed."
             }]
           }' ${{ env.PROMETHEUS_URL }}
-
+        
       - name: Annotate Grafana with Deployment Success
         run: |
           curl -X POST -H "Authorization: Bearer ${{ env.GRAFANA_API_KEY }}" -H "Content-Type: application/json" -d '{
@@ -171,11 +171,11 @@ jobs:
             "tags": ["deployment"],
             "text": "The application was successfully deployed."
           }' ${{ env.GRAFANA_URL }}
-
+        
       - name: Update AWS Auto Scaling Group
         run: |
           aws autoscaling update-auto-scaling-group --auto-scaling-group-name ${{ env.AUTO_SCALING_GROUP }} --desired-capacity 2 --region ${{ env.AWS_REGION }}  # Adjust capacity based on your needs
-
+        
   # Job for scheduled notifications
   cron-job:
     runs-on: ubuntu-latest
@@ -189,8 +189,8 @@ jobs:
               "summary": "Scheduled Status Update",
               "description": "Automated status check running every 1 minute."
             }
-          ]' ${{ env.ALERTMANAGER_URL }}
-
+          ]' http://localhost:9092/api/v2/alerts
+        
       - name: Notify Alertmanager of Resolved Test Alert
         run: |
           curl -i -X POST -H "Content-Type: application/json" -d '[
@@ -205,4 +205,4 @@ jobs:
                 "description": "This alert has been resolved."
               }
             }
-          ]' ${{ env.ALERTMANAGER_URL }}
+          ]' http://localhost:9092/api/v2/alerts
