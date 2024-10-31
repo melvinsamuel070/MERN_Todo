@@ -36,11 +36,11 @@ jobs:
 
       - name: Build Backend Image
         run: |
-          docker build -t melvinsamuel070/backend:latest -f ./backend/Dockerfile ./backend
+          docker build -t ${{ env.BACKEND_IMAGE }} -f ./backend/Dockerfile ./backend
 
       - name: Build Frontend Image
         run: |
-          docker build -t melvinsamuel070/frontend:latest -f ./frontend/Dockerfile ./frontend
+          docker build -t ${{ env.FRONTEND_IMAGE }} -f ./frontend/Dockerfile ./frontend
 
       - name: Login to Docker Hub
         run: |
@@ -48,11 +48,11 @@ jobs:
 
       - name: Push Backend Image to Docker Hub
         run: |
-          docker push melvinsamuel070/backend:latest
+          docker push ${{ env.BACKEND_IMAGE }}
 
       - name: Push Frontend Image to Docker Hub
         run: |
-          docker push melvinsamuel070/frontend:latest
+          docker push ${{ env.FRONTEND_IMAGE }}
 
       - name: Notify Alertmanager of Build Success
         run: |
@@ -171,5 +171,21 @@ jobs:
               "severity": "info",
               "summary": "Scheduled Status Update",
               "description": "Automated status check running every 2 minutes."
+            }
+          ]' ${{ env.ALERTMANAGER_URL }}
+
+      - name: Notify Alertmanager of Resolved Test Alert
+        run: |
+          curl -i -X POST -H "Content-Type: application/json" -d '[
+            {
+              "status": "resolved",
+              "labels": {
+                "alertname": "TestAlert",
+                "severity": "info"
+              },
+              "annotations": {
+                "summary": "Test Alert",
+                "description": "This alert has been resolved."
+              }
             }
           ]' ${{ env.ALERTMANAGER_URL }}
