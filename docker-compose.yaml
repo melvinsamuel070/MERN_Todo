@@ -81,8 +81,10 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.27.0
     restart: unless-stopped
+    ports:
+      - "9093:9093"  # Map port 9093 for Alertmanager access
     volumes:
-      - /home/melvin/mybash-bash/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml  # Ensure it's a list
+      - /home/melvin/mybash-bash/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
       - mern_todo_app_napa-network
 
@@ -105,4 +107,3 @@ volumes:
   backend_data:
   mongo_data:  # Add a volume for MongoDB
   grafana-data:  # Add a volume for Grafana
-
