@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '*/1 * * * *'  # Run every 1 minutes for cron job notifications
+    - cron: '*/1 * * * *'  # Run every 1 minute for cron job notifications
 
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
@@ -53,6 +53,23 @@ jobs:
       - name: Push Frontend Image to Docker Hub
         run: |
           docker push ${{ env.FRONTEND_IMAGE }}
+
+      - name: Start Alertmanager
+        run: |
+          docker run -d --name alertmanager -p 9093:9093 \
+          -v ./alertmanager:/alertmanager \
+          prom/alertmanager
+
+      - name: Wait for Alertmanager to be ready
+        run: |
+          for i in {1..10}; do 
+            if curl -s -f ${{ env.ALERTMANAGER_URL }}; then 
+              echo "Alertmanager is up and running!"; 
+              break; 
+            fi; 
+            echo "Waiting for Alertmanager to be ready..."; 
+            sleep 6; 
+          done
 
       - name: Notify Alertmanager of Build Success
         run: |
@@ -170,7 +187,7 @@ jobs:
               "alertname": "StatusNotification",
               "severity": "info",
               "summary": "Scheduled Status Update",
-              "description": "Automated status check running every 1 minutes."
+              "description": "Automated status check running every 1 minute."
             }
           ]' ${{ env.ALERTMANAGER_URL }}
 
