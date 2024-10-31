@@ -5,13 +5,12 @@ on:
     branches:
       - main
   schedule:
-    - cron: '*/2 * * * *'  # Run every 5 minutes for cron job notifications
+    - cron: '*/2 * * * *'  # Run every 2 minutes for cron job notifications
 
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9093/api/v1/alerts  # Local Alertmanager URL
-  # EMAIL_API_URL: ${{ secrets.EMAIL_API_URL }}  # Email API end
+  ALERTMANAGER_URL: http://localhost:9093/api/v2/alerts  # Updated to the new API endpoint
   EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}  # Email username
   EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # Email password
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}  # Docker Hub username
@@ -41,7 +40,7 @@ jobs:
 
       - name: Build Frontend Image
         run: |
-           docker build -t melvinsamuel070/frontend:latest -f ./frontend/Dockerfile ./frontend
+          docker build -t melvinsamuel070/frontend:latest -f ./frontend/Dockerfile ./frontend
 
       - name: Login to Docker Hub
         run: |
@@ -55,17 +54,21 @@ jobs:
         run: |
           docker push melvinsamuel070/frontend:latest
 
-
       - name: Notify Alertmanager of Build Success
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{
-            "alerts": [{
-              "alertname": "BuildSuccess",
-              "severity": "info",
-              "summary": "CI/CD Build Successful",
-              "description": "The latest build was successful."
-            }]
-          }' ${{ env.ALERTMANAGER_URL }}
+          curl -i -X POST -H "Content-Type: application/json" -d '[
+            {
+              "status": "firing",
+              "labels": {
+                "alertname": "BuildSuccess",
+                "severity": "info"
+              },
+              "annotations": {
+                "summary": "Build Successful",
+                "description": "The latest build was successful."
+              }
+            }
+          ]' ${{ env.ALERTMANAGER_URL }}
 
       - name: Send Email Notification of Build Success
         run: |
@@ -114,14 +117,19 @@ jobs:
 
       - name: Notify Alertmanager of Deployment Success
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{
-            "alerts": [{
-              "alertname": "DeploymentSuccess",
-              "severity": "info",
-              "summary": "Deployment Successful",
-              "description": "The application was successfully deployed."
-            }]
-          }' ${{ env.ALERTMANAGER_URL }}
+          curl -i -X POST -H "Content-Type: application/json" -d '[
+            {
+              "status": "firing",
+              "labels": {
+                "alertname": "DeploymentSuccess",
+                "severity": "info"
+              },
+              "annotations": {
+                "summary": "Deployment Successful",
+                "description": "The application was successfully deployed."
+              }
+            }
+          ]' ${{ env.ALERTMANAGER_URL }}
 
       - name: Send Email Notification of Deployment Success
         run: |
@@ -130,7 +138,7 @@ jobs:
               "to": [{"email": "kingsamuel412@mail.com"}],
               "subject": "Deployment Successful"
             }],
-            "from": {"email": "melvinsamuel070@mail.com"},
+            "from": {"email": "melvinsamuel070@gmail.com"},
             "content": [{
               "type": "text/plain",
               "value": "The application was successfully deployed."

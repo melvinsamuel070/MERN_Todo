@@ -35,5 +35,3 @@ scrape_configs:
     static_configs:
       - targets:
           - 'mern_todo_app-mongo-exporter-1:9216'  # Monitoring MongoDB Exporter
-
-  

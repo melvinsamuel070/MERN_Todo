@@ -50,3 +50,13 @@ groups:
       annotations:
         summary: "MongoDB Exporter is down"
         description: "MongoDB Exporter at {{ $labels.instance }} has been down for more than 1 minute."
+
+    # Test alert for checking email notifications
+    - alert: TestAlert
+      expr: vector(1)  # This will always trigger
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Test Alert"
+        description: "This is a test alert to check email notifications."
