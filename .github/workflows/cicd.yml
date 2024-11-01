@@ -82,20 +82,28 @@ jobs:
               "summary": "CI/CD Build Successful",
               "description": "The latest build was successful."
             }
-          ]' ${{ env.ALERTMANAGER_URL }}
-
+          ]' ${{ env.ALERTMANAGER_URL }}   
+          
           - name: Notify Prometheus of Build Success
           run: |
-            curl -X POST -H "Content-Type: application/json" -d '{
+            response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{
               "alerts": [{
                 "alertname": "BuildSuccess",
                 "severity": "info",
                 "summary": "Build Successful",
-                "description": "The latest build was successful."
+                "description": "The latest build was successful.",
+                "labels": {
+                  "team": "development",
+                  "environment": "production"
+                }
               }]
-            }' http://prometheus:9090/api/v1/alerts
+            }' http://prometheus:9090/api/v1/alerts)
         
-
+            if [ "$response" -ne 200 ]; then
+              echo "Failed to notify Prometheus: HTTP Status $response"
+              exit 1
+            fi
+        
       - name: Annotate Grafana with Build Success
         run: |
           curl -X POST -H "Authorization: Bearer ${{ env.GRAFANA_API_KEY }}" -H "Content-Type: application/json" -d '{
