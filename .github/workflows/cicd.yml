@@ -83,9 +83,9 @@ jobs:
               "description": "The latest build was successful."
             }
           ]' ${{ env.ALERTMANAGER_URL }}   
-          
-          - name: Notify Prometheus of Build Success
-          run: |
+
+      - name: Notify Prometheus of Build Success
+        run: |
             response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{
               "alerts": [{
                 "alertname": "BuildSuccess",
