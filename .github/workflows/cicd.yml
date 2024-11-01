@@ -84,16 +84,17 @@ jobs:
             }
           ]' ${{ env.ALERTMANAGER_URL }}
 
-      - name: Notify Prometheus of Build Success
-        run: |
-          curl -X POST -H "Content-Type: application/json" -d '{
-            "alerts": [{
-              "alertname": "BuildSuccess",
-              "severity": "info",
-              "summary": "Build Successful",
-              "description": "The latest build was successful."
-            }]
-          }' ${{ env.PROMETHEUS_URL }}
+          - name: Notify Prometheus of Build Success
+          run: |
+            curl -X POST -H "Content-Type: application/json" -d '{
+              "alerts": [{
+                "alertname": "BuildSuccess",
+                "severity": "info",
+                "summary": "Build Successful",
+                "description": "The latest build was successful."
+              }]
+            }' http://prometheus:9090/api/v1/alerts
+        
 
       - name: Annotate Grafana with Build Success
         run: |
@@ -125,25 +126,17 @@ jobs:
             }
           ]' ${{ env.ALERTMANAGER_URL }}
 
-          - name: Notify Prometheus of Build Success
-          run: |
-            for i in {1..10}; do 
-              if curl -s -f -X POST -H "Content-Type: application/json" -d '{
-                "alerts": [{
-                  "alertname": "BuildSuccess",
-                  "severity": "info",
-                  "summary": "Build Successful",
-                  "description": "The latest build was successful."
-                }]
-              }' http://localhost:9090/api/v1/alerts; then
-                echo "Notification sent to Prometheus!";
-                break;
-              else
-                echo "Waiting for Prometheus to be available...";
-                sleep 5;
-              fi;
-            done
-        
+      - name: Notify Prometheus of Deployment Success
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '{
+            "alerts": [{
+              "alertname": "DeploymentSuccess",
+              "severity": "info",
+              "summary": "Deployment Successful",
+              "description": "The application was successfully deployed."
+            }]
+          }' ${{ env.PROMETHEUS_URL }}
+
       - name: Annotate Grafana with Deployment Success
         run: |
           curl -X POST -H "Authorization: Bearer ${{ env.GRAFANA_API_KEY }}" -H "Content-Type: application/json" -d '{
