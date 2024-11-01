@@ -4,22 +4,30 @@ on:
   push:
     branches:
       - main
+  workflow_run:
+    workflows: [CI/CD Pipeline for Local Development]
+    types:
+      - completed
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts  # Updated Alertmanager URL
-  EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}  # Email username
-  EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}  # Email password
-  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}  # Docker Hub username
-  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}  # Docker Hub password
-  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}  # Updated Docker Hub token
-  PROMETHEUS_URL: http://localhost:9090/api/v1/alerts  # Local Prometheus URL
-  GRAFANA_URL: http://localhost:3001/api/annotations  # Local Grafana URL
-  GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}  # Grafana API Key
-  ALB_DNS_NAME: your-alb-dns-name  # Replace with your ALB DNS name
-  AWS_REGION: us-east-1  # Your AWS region
-  AUTO_SCALING_GROUP: your-auto-scaling-group-name  # Replace with your ASG name
+  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
+  EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+  EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  PROMETHEUS_URL: http://localhost:9090/api/v1/alerts
+  GRAFANA_URL: http://localhost:3001/api/annotations
+  GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+  ALB_DNS_NAME: your-alb-dns-name
+  AWS_REGION: us-east-1
+  AUTO_SCALING_GROUP: your-auto-scaling-group-name
 
 jobs:
   build-and-test:
