@@ -73,50 +73,30 @@ jobs:
             sleep 6; 
           done
 
-      - name: Notify Alertmanager of Build Success
-        run: |
-              response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
-                {
-                  "labels": {
-                    "alertname": "BuildSuccess",
-                    "severity": "info",
-                    "team": "development",
-                    "environment": "production"
-                  },
-                  "annotations": {
-                    "summary": "Build Successful",
-                    "description": "The latest build was successful."
-                  }
-                }
-              ]' http://localhost:9092/api/v2/alerts)
-              
-              if [ "$response" -ne 200 ]; then
-                echo "Failed to notify Alertmanager: HTTP Status $response"
-                exit 1
-              else
-                echo "Successfully notified Alertmanager of build success."
-              fi
-        
-
-      - name: Notify Prometheus of Build Success
-        run: |
-            response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{
-              "alerts": [{
-                "alertname": "BuildSuccess",
-                "severity": "info",
-                "summary": "Build Successful",
-                "description": "The latest build was successful.",
+          - name: Notify Alertmanager of Build Success
+          run: |
+            response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+              {
                 "labels": {
+                  "alertname": "BuildSuccess",
+                  "severity": "info",
                   "team": "development",
                   "environment": "production"
+                },
+                "annotations": {
+                  "summary": "Build Successful",
+                  "description": "The latest build was successful."
                 }
-              }]
-            }' http://prometheus:9090/api/v1/alerts)
-        
+              }
+            ]' http://localhost:9092/api/v2/alerts)
+            
             if [ "$response" -ne 200 ]; then
-              echo "Failed to notify Prometheus: HTTP Status $response"
+              echo "Failed to notify Alertmanager: HTTP Status $response"
               exit 1
+            else
+              echo "Successfully notified Alertmanager of build success."
             fi
+        
         
       - name: Annotate Grafana with Build Success
         run: |
