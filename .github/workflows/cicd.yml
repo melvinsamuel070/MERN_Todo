@@ -97,16 +97,28 @@ jobs:
               echo "Successfully notified Alertmanager of build success."
             fi
         
-        
       - name: Annotate Grafana with Build Success
         run: |
-          curl -X POST -H "Authorization: Bearer ${{ env.GRAFANA_API_KEY }}" -H "Content-Type: application/json" -d '{
-            "dashboardId": 1,
-            "time": {"from": "now-1h", "to": "now"},
-            "tags": ["build"],
-            "text": "The latest build was successful."
-          }' ${{ env.GRAFANA_URL }}
-
+              response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+                -H "Authorization: Bearer ${{ env.GRAFANA_API_KEY }}" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "dashboardId": 1,
+                  "time": {
+                    "from": "'"$(date --date='1 hour ago' +%Y-%m-%dT%H:%M:%SZ)"'",
+                    "to": "'"$(date +%Y-%m-%dT%H:%M:%SZ)"'"
+                  },
+                  "tags": ["build"],
+                  "text": "The latest build was successful."
+                }' ${{ env.GRAFANA_URL }})
+          
+              if [ "$response" -ne 200 ]; then
+                echo "Failed to annotate Grafana: HTTP Status $response"
+                exit 1
+              else
+                echo "Successfully annotated Grafana with build success."
+              fi
+          
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-test  # Ensure the deploy job runs only after build-and-test
