@@ -73,8 +73,8 @@ jobs:
             sleep 6; 
           done
 
-          - name: Notify Alertmanager of Build Success
-          run: |
+      - name: Notify Alertmanager of Build Success
+        run: |
             response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
               {
                 "labels": {
