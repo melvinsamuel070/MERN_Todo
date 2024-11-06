@@ -1,6 +1,6 @@
 global:
   resolve_timeout: 5m
-  smtp_hello: "localhost"
+  smtp_hello: ""
   smtp_require_tls: true
 
 route:

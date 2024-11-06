@@ -61,6 +61,14 @@ services:
     networks:
       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
 
+  pushgateway:
+    image: prom/pushgateway:latest  # Pushgateway image
+    ports:
+      - '9091:9091'  # Expose Pushgateway's port
+    restart: always
+    networks:
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network 
+
   node-exporter:
     image: prom/node-exporter:v1.7.0
     restart: unless-stopped
@@ -84,7 +92,7 @@ services:
     ports:
       - "9092:9093"  # Map port 9093 for Alertmanager access
     volumes:
-      - /home/melvin/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - /home/ubuntu/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
 

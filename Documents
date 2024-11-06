@@ -1,0 +1,231 @@
+# #!/bin/bash
+
+# # Variables
+# NEW_VPC_CIDR="10.1.0.0/16"
+# PRIVATE_SUBNET_CIDR="10.1.1.0/24"
+# PUBLIC_SUBNET_CIDR="10.1.2.0/24"
+# REGION="us-east-1"
+# AMI_ID="ami-0cde6390e61a03eee" # Update based on your region and OS type
+# INSTANCE_TYPE="t2.micro"
+# KEY_NAME="main-pro" # Remove .pem extension
+
+# # Function to check the exit status of each command
+# check_error() {
+#     if [ $? -ne 0 ]; then
+#         echo "Error on line $1: $2"
+#         exit 1
+#     fi
+# }
+
+# # Check for Default VPC for Frontend
+# echo "Retrieving default VPC ID for frontend..."
+# DEFAULT_VPC_ID=$(aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text)
+# if [ "$DEFAULT_VPC_ID" == "None" ]; then
+#     echo "Error: Default VPC not found. Make sure your account has a default VPC."
+#     exit 1
+# fi
+# echo "Default VPC ID found: $DEFAULT_VPC_ID"
+
+# # Step 1: Create or Get Existing New VPC for Backend
+# echo "Checking for existing VPC for backend..."
+# NEW_VPC_ID=$(aws ec2 describe-vpcs --filters "Name=cidr,Values=$NEW_VPC_CIDR" --query "Vpcs[0].VpcId" --output text)
+# if [ "$NEW_VPC_ID" == "None" ]; then
+#     echo "Creating new VPC for backend..."
+#     NEW_VPC_ID=$(aws ec2 create-vpc --cidr-block $NEW_VPC_CIDR --region $REGION --query 'Vpc.VpcId' --output text)
+#     aws ec2 modify-vpc-attribute --vpc-id $NEW_VPC_ID --enable-dns-support "{\"Value\":true}"
+#     aws ec2 modify-vpc-attribute --vpc-id $NEW_VPC_ID --enable-dns-hostnames "{\"Value\":true}"
+#     echo "New VPC created with ID: $NEW_VPC_ID"
+# else
+#     echo "Existing VPC for backend found: $NEW_VPC_ID"
+# fi
+
+# # Step 2: Create or Find Subnets
+# echo "Checking for private subnet in new VPC..."
+# PRIVATE_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$NEW_VPC_ID" "Name=cidr-block,Values=$PRIVATE_SUBNET_CIDR" --query "Subnets[0].SubnetId" --output text)
+# if [ "$PRIVATE_SUBNET_ID" == "None" ]; then
+#     echo "Creating private subnet in new VPC..."
+#     PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $NEW_VPC_ID --cidr-block $PRIVATE_SUBNET_CIDR --availability-zone ${REGION}a --query 'Subnet.SubnetId' --output text)
+#     echo "Private Subnet ID created: $PRIVATE_SUBNET_ID"
+# else
+#     echo "Existing private subnet found: $PRIVATE_SUBNET_ID"
+# fi
+
+# echo "Checking for public subnet in new VPC for Bastion Host..."
+# PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$NEW_VPC_ID" "Name=cidr-block,Values=$PUBLIC_SUBNET_CIDR" --query "Subnets[0].SubnetId" --output text)
+# if [ "$PUBLIC_SUBNET_ID" == "None" ]; then
+#     echo "Creating public subnet in new VPC..."
+#     PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id $NEW_VPC_ID --cidr-block $PUBLIC_SUBNET_CIDR --availability-zone ${REGION}a --query 'Subnet.SubnetId' --output text)
+#     echo "Public Subnet ID created: $PUBLIC_SUBNET_ID"
+# else
+#     echo "Existing public subnet found: $PUBLIC_SUBNET_ID"
+# fi
+
+# # Step 3: Create or Attach Internet Gateway
+# echo "Checking for Internet Gateway..."
+# IGW_ID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$NEW_VPC_ID" --query 'InternetGateways[0].InternetGatewayId' --output text)
+# if [ "$IGW_ID" == "None" ]; then
+#     echo "Creating and attaching Internet Gateway..."
+#     IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+#     aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $NEW_VPC_ID
+#     echo "Internet Gateway created and attached: $IGW_ID"
+# else
+#     echo "Existing Internet Gateway found: $IGW_ID"
+# fi
+
+# # Step 4: Set Up Route Tables
+# echo "Setting up route table for public subnet..."
+# PUBLIC_ROUTE_TABLE_ID=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$NEW_VPC_ID" "Name=association.subnet-id,Values=$PUBLIC_SUBNET_ID" --query 'RouteTables[0].RouteTableId' --output text)
+# if [ "$PUBLIC_ROUTE_TABLE_ID" == "None" ]; then
+#     PUBLIC_ROUTE_TABLE_ID=$(aws ec2 create-route-table --vpc-id $NEW_VPC_ID --query 'RouteTable.RouteTableId' --output text)
+#     aws ec2 create-route --route-table-id $PUBLIC_ROUTE_TABLE_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+#     aws ec2 associate-route-table --route-table-id $PUBLIC_ROUTE_TABLE_ID --subnet-id $PUBLIC_SUBNET_ID
+#     echo "Public Route Table ID created and associated: $PUBLIC_ROUTE_TABLE_ID"
+# else
+#     echo "Existing Public Route Table found: $PUBLIC_ROUTE_TABLE_ID"
+# fi
+
+# # Step 5: Create NAT Gateway
+# echo "Checking for NAT Gateway..."
+# NAT_GW_ID=$(aws ec2 describe-nat-gateways --filter "Name=subnet-id,Values=$PUBLIC_SUBNET_ID" --query 'NatGateways[0].NatGatewayId' --output text)
+# if [ "$NAT_GW_ID" == "None" ]; then
+#     EIP_ALLOC_ID=$(aws ec2 allocate-address --domain vpc --query 'AllocationId' --output text)
+#     NAT_GW_ID=$(aws ec2 create-nat-gateway --subnet-id $PUBLIC_SUBNET_ID --allocation-id $EIP_ALLOC_ID --query 'NatGateway.NatGatewayId' --output text)
+#     aws ec2 wait nat-gateway-available --nat-gateway-ids $NAT_GW_ID
+#     echo "NAT Gateway created: $NAT_GW_ID"
+# else
+#     echo "Existing NAT Gateway found: $NAT_GW_ID"
+# fi
+
+# # Step 6: Route Table for Private Subnet
+# echo "Setting up route table for private subnet..."
+# PRIVATE_ROUTE_TABLE_ID=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$NEW_VPC_ID" "Name=association.subnet-id,Values=$PRIVATE_SUBNET_ID" --query 'RouteTables[0].RouteTableId' --output text)
+# if [ "$PRIVATE_ROUTE_TABLE_ID" == "None" ]; then
+#     PRIVATE_ROUTE_TABLE_ID=$(aws ec2 create-route-table --vpc-id $NEW_VPC_ID --query 'RouteTable.RouteTableId' --output text)
+#     aws ec2 create-route --route-table-id $PRIVATE_ROUTE_TABLE_ID --destination-cidr-block 0.0.0.0/0 --nat-gateway-id $NAT_GW_ID
+#     aws ec2 associate-route-table --route-table-id $PRIVATE_ROUTE_TABLE_ID --subnet-id $PRIVATE_SUBNET_ID
+#     echo "Private Route Table ID created and associated: $PRIVATE_ROUTE_TABLE_ID"
+# else
+#     echo "Existing Private Route Table found: $PRIVATE_ROUTE_TABLE_ID"
+# fi
+
+# # Launch frontend instance in the public subnet of the new VPC
+# FRONTEND_INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI_ID --instance-type $INSTANCE_TYPE --key-name $KEY_NAME --subnet-id $PUBLIC_SUBNET_ID --associate-public-ip-address --query 'Instances[0].InstanceId' --output text)
+# if [ -z "$FRONTEND_INSTANCE_ID" ]; then
+#     echo "Error: Failed to launch frontend instance."
+#     exit 1
+# else
+#     aws ec2 create-tags --resources $FRONTEND_INSTANCE_ID --tags Key=Name,Value=FrontendInstance
+#     echo "Frontend instance launched with ID: $FRONTEND_INSTANCE_ID"
+# fi
+
+# # Launch backend instance in the private subnet
+# BACKEND_INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI_ID --instance-type $INSTANCE_TYPE --key-name $KEY_NAME --subnet-id $PRIVATE_SUBNET_ID --query 'Instances[0].InstanceId' --output text)
+# if [ -z "$BACKEND_INSTANCE_ID" ]; then
+#     echo "Error: Failed to launch backend instance."
+#     exit 1
+# else
+#     aws ec2 create-tags --resources $BACKEND_INSTANCE_ID --tags Key=Name,Value=BackendInstance
+#     echo "Backend instance launched with ID: $BACKEND_INSTANCE_ID"
+# fi
+
+# # Define instance IDs for frontend and backend
+# FRONTEND_INSTANCE_ID="i-0fb6e6eb3005e1bc9"  # Replace with your frontend instance ID
+# BACKEND_INSTANCE_ID="i-0e0847d44d1b53b28"    # Replace with your backend instance ID
+
+# # Allocate Elastic IPs
+# FRONTEND_ELASTIC_IP=$(aws ec2 allocate-address --domain vpc --query 'AllocationId' --output text)
+# BACKEND_ELASTIC_IP=$(aws ec2 allocate-address --domain vpc --query 'AllocationId' --output text)
+
+# # Associate Elastic IPs with the respective instances
+# aws ec2 associate-address --instance-id $FRONTEND_INSTANCE_ID --allocation-id $FRONTEND_ELASTIC_IP
+# aws ec2 associate-address --instance-id $BACKEND_INSTANCE_ID --allocation-id $BACKEND_ELASTIC_IP
+
+# echo "Elastic IPs allocated and associated:"
+# echo "Frontend Elastic IP: $FRONTEND_ELASTIC_IP"
+# echo "Backend Elastic IP: $BACKEND_ELASTIC_IP"
+
+# # Define instance IDs for frontend and backend
+# FRONTEND_INSTANCE_ID="i-0fb6e6eb3005e1bc9"  # Replace with your frontend instance ID
+# BACKEND_INSTANCE_ID="i-0e0847d44d1b53b28"    # Replace with your backend instance ID
+
+# # Function to get existing Elastic IPs for a specific instance
+# get_existing_eip() {
+#     INSTANCE_ID=$1
+#     aws ec2 describe-addresses --query "Addresses[?InstanceId=='${INSTANCE_ID}'].{IP:PublicIp, AllocationId:AllocationId}" --output json
+# }
+
+# # Get existing Elastic IPs for frontend and backend instances
+# FRONTEND_EIP=$(get_existing_eip $FRONTEND_INSTANCE_ID)
+# BACKEND_EIP=$(get_existing_eip $BACKEND_INSTANCE_ID)
+
+# # Check if Elastic IP for frontend exists
+# if [ -z "$FRONTEND_EIP" ]; then
+#     echo "No existing Elastic IP found for frontend. Allocating new Elastic IP."
+#     FRONTEND_ELASTIC_IP=$(aws ec2 allocate-address --domain vpc --query 'AllocationId' --output text)
+#     aws ec2 associate-address --instance-id $FRONTEND_INSTANCE_ID --allocation-id $FRONTEND_ELASTIC_IP
+#     echo "Allocated and associated Elastic IP for frontend: $FRONTEND_ELASTIC_IP"
+# else
+#     FRONTEND_ELASTIC_IP=$(echo $FRONTEND_EIP | jq -r '.[0].AllocationId')
+#     echo "Using existing Elastic IP for frontend: $FRONTEND_ELASTIC_IP"
+# fi
+
+# # Check if Elastic IP for backend exists
+# if [ -z "$BACKEND_EIP" ]; then
+#     echo "No existing Elastic IP found for backend. Allocating new Elastic IP."
+#     BACKEND_ELASTIC_IP=$(aws ec2 allocate-address --domain vpc --query 'AllocationId' --output text)
+#     aws ec2 associate-address --instance-id $BACKEND_INSTANCE_ID --allocation-id $BACKEND_ELASTIC_IP
+#     echo "Allocated and associated Elastic IP for backend: $BACKEND_ELASTIC_IP"
+# else
+#     BACKEND_ELASTIC_IP=$(echo $BACKEND_EIP | jq -r '.[0].AllocationId')
+#     echo "Using existing Elastic IP for backend: $BACKEND_ELASTIC_IP"
+# fi
+
+# # Create and launch EC2 instances (frontend and backend)
+
+# # Frontend Instance
+# frontend_instance_id=$(aws ec2 run-instances --image-id ami-xxxxxxxx --instance-type t2.micro --key-name YourKeyName --security-group-ids sg-xxxxxxx --query 'Instances[0].InstanceId' --output text)
+
+# # Wait for the instance to be running
+# aws ec2 wait instance-running --instance-ids $frontend_instance_id
+
+# # Install Nginx and configure it
+# ssh -i /path/to/your-key.pem ubuntu@$frontend_instance_ip << 'ENDSSH'
+#     sudo apt update
+#     sudo apt install nginx -y
+
+#     cat <<EOF | sudo tee /etc/nginx/sites-available/default
+# server {
+#     listen 80;
+
+#     # Frontend Configuration
+#     location / {
+#         proxy_pass http://localhost:3000;  # Frontend on port 3000
+#         proxy_http_version 1.1;
+#         proxy_set_header Upgrade \$http_upgrade;
+#         proxy_set_header Connection 'upgrade';
+#         proxy_set_header Host \$host;
+#         proxy_cache_bypass \$http_upgrade;
+#     }
+
+#     # Backend Configuration
+#     location /api {
+#         proxy_pass http://localhost:3500;  # Backend on port 3500
+#         proxy_http_version 1.1;
+#         proxy_set_header Upgrade \$http_upgrade;
+#         proxy_set_header Connection 'upgrade';
+#         proxy_set_header Host \$host;
+#         proxy_cache_bypass \$http_upgrade;
+#     }
+# }
+# EOF
+
+#     sudo nginx -t && sudo systemctl reload nginx
+# ENDSSH
+
+# # Security group rule for HTTP
+# aws ec2 authorize-security-group-ingress --group-id sg-xxxxxxx --protocol tcp --port 80 --cidr 0.0.0.0/0
+
+# # Similar steps for the backend instance
+
+
+# echo "build successfully"

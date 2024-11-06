@@ -1,0 +1,70 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
+env:
+  BACKEND_IMAGE: melvinsamuel070/backend:latest
+  FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
+  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Backend Image
+        run: docker build -t ${{ env.BACKEND_IMAGE }} -f ./backend/Dockerfile ./backend
+
+      - name: Build Frontend Image
+        run: docker build -t ${{ env.FRONTEND_IMAGE }} -f ./frontend/Dockerfile ./frontend
+
+      - name: Upload Build Logs
+        if: always()  # Run this step even if previous steps fail
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-logs
+          path: |
+            ./backend/build.log
+            ./frontend/build.log
+        # **Instructions**: Ensure your Dockerfiles write logs to these paths, or adjust paths as needed.
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Push Backend Image to Docker Hub
+        run: docker push ${{ env.BACKEND_IMAGE }}
+
+      - name: Push Frontend Image to Docker Hub
+        run: docker push ${{ env.FRONTEND_IMAGE }}
+
+      - name: Notify Alertmanager of Build Success
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '[
+            {
+              "labels": { "alertname": "BuildSuccess", "severity": "info" },
+              "annotations": { "summary": "Build Successful" }
+            }
+          ]' ${{ env.ALERTMANAGER_URL }}
+
+      - name: Send Email Notification for Build Success
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Build Success: CI Pipeline"
+          body: "The build stage of your CI pipeline completed successfully."
+          to: ${{ secrets.EMAIL_RECIPIENT }}
+          from: ${{ secrets.EMAIL_USERNAME }}

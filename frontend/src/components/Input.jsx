@@ -10,7 +10,7 @@ function Input({setData}) {
       setError(true)
       console.log("emap");
     }else{
-      const response = await axios.post("http://23.21.83.242:3500/todo", { todo: todo })
+      const response = await axios.post("http://34.192.51.127:3500/todo", { todo: todo })
       if(response.data.status){
         setTodo("")
         setData(response.data.data)
