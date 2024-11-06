@@ -92,7 +92,7 @@ services:
     ports:
       - "9092:9093"  # Map port 9093 for Alertmanager access
     volumes:
-      - /home/ubuntu/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - /home/melvin/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
 
