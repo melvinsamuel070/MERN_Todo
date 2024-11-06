@@ -52,10 +52,15 @@ jobs:
         run: |
           curl -X POST -H "Content-Type: application/json" -d '[
             {
-              "labels": { "alertname": "BuildSuccess", "severity": "info" },
-              "annotations": { "summary": "Build Successful" }
+              "labels": {
+                "alertname": "BuildSuccess",
+                "severity": "info"
+              },
+              "annotations": {
+                "summary": "Build Successful"
+              }
             }
-          ]' ${{ env.ALERTMANAGER_URL }}
+          ]' http://localhost:9092/api/v2/alerts
 
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
