@@ -3,8 +3,8 @@ services:
     image: mongo  # Use the official MongoDB image
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root  # Root username for MongoDB
-      MONGO_INITDB_ROOT_PASSWORD: password  # Root password for MongoDB
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}  # Root username for MongoDB
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}  # Root password for MongoDB
     volumes:
       - mongo_data:/data/db  # Persist MongoDB data
     networks:
