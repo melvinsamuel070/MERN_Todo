@@ -36,7 +36,8 @@ scrape_configs:
       - targets:
           - 'mern_todo_app-mongo-exporter-1:9216'  # Monitoring MongoDB Exporter
 
+  # Scrape configuration for Push Gateway
   - job_name: mern_todo_app-pushgateway-1
     static_configs:
       - targets:
-          - 'mern_todo_app-pushgateway-1:9091'
+          - 'mern_todo_app-pushgateway-1:9091'  # Monitoring Push Gateway

@@ -1,6 +1,6 @@
 global:
   resolve_timeout: 5m
-  smtp_require_tls: true  # Keep this as true for secure email transmission
+  smtp_require_tls: true  # Ensures TLS encryption for email
 
 route:
   receiver: email
@@ -8,12 +8,33 @@ route:
 receivers:
   - name: email
     email_configs:
-      - send_resolved: false
+      - send_resolved: true
         to: kingsamuel412@gmail.com
         from: melvinsamuel070@gmail.com
-        smarthost: smtp.gmail.com:587  # Change to 587 for STARTTLS
+        smarthost: smtp.gmail.com:587  # SSL on port 465
         auth_username: melvinsamuel070@gmail.com
-        auth_password: "zihv khej dtsh ostz"  # Ensure this is the correct app password
-        require_tls: true  # Ensure TLS is required for secure connection
+        auth_password: "wetz gzvg rmbm eqqo"  # Your app password
+        require_tls: true  # SSL should already encrypt the connection
         tls_config:
-          insecure_skip_verify: true  # Optional, only use if you have SSL verification issues
+          insecure_skip_verify: false  # False unless certificate issues arise
+
+
+
+
+
+# global:
+#   resolve_timeout: 5m
+
+# route:
+#   group_by: ['alertname']
+#   receiver: 'email'
+
+# receivers:
+#   - name: 'email'
+#     email_configs:
+#       - to: 'kingsamuel412@gmail.com'
+#         from: 'melvinsamuel070@gmail.com'
+#         smarthost: 'smtp.gmail.com:587'   # Use port 587 for STARTTLS
+#         auth_username: 'melvinsamuel070@gmail.com'
+#         auth_password: 'zihv khej dtsh ostz'
+#         require_tls: true  # Ensure TLS is required for Gmail
