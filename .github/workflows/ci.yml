@@ -11,7 +11,7 @@ on:
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
+  ALERTMANAGER_URL: http://localhost:9094/api/v2/alerts
 
 jobs:
   build:
@@ -60,7 +60,7 @@ jobs:
                 "summary": "Build Successful"
               }
             }
-          ]' http://localhost:9092/api/v2/alerts
+          ]' http://localhost:9094/api/v2/alerts
 
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
