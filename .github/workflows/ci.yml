@@ -11,7 +11,7 @@ on:
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9093/api/v2/alerts
+  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
 
 jobs:
   build:
@@ -57,37 +57,38 @@ jobs:
           # Test the connection to the Alertmanager API
           curl -v ${{ env.ALERTMANAGER_URL }} || exit 1
       
-      - name: Notify Alertmanager of Build Success
-        run: |
-          echo "Sending build success notification to Alertmanager..."
-          # Send the notification to Alertmanager
-          response=$(curl -v -X POST -H "Content-Type: application/json" -d '[
-            {
-              "labels": {
-                "alertname": "BuildSuccess",
-                "severity": "info",
-                "team": "development",
-                "environment": "production"
-              },
-              "annotations": {
-                "summary": "Build Successful",
-                "description": "The latest build was successful."
+          - name: Notify Alertmanager of Build Success
+          run: |
+            echo "Sending build success notification to Alertmanager..."
+            # Send the notification to Alertmanager
+            response=$(curl -v -X POST -H "Content-Type: application/json" -d '[
+              {
+                "labels": {
+                  "alertname": "BuildSuccess",
+                  "severity": "info",
+                  "team": "development",
+                  "environment": "production"
+                },
+                "annotations": {
+                  "summary": "Build Successful",
+                  "description": "The latest build was successful."
+                }
               }
-            }
-          ]' ${{ env.ALERTMANAGER_URL }} 2>&1)
-          
-          # Debugging output: print the entire response from Alertmanager
-          echo "Response from Alertmanager:"
-          echo "$response"
-          
-          # Check if the response contains an error message
-          if [[ "$response" == *"Failed"* || "$response" == *"error"* || "$response" == *"refused"* || "$response" == *"connection"* ]]; then
-            echo "Error occurred while sending notification to Alertmanager."
-            echo "Full response: $response"
-            exit 1
-          else
-            echo "Successfully sent notification to Alertmanager."
-          fi
+            ]' http://localhost:9092/api/v2/alerts 2>&1)
+            
+            # Debugging output: print the entire response from Alertmanager
+            echo "Response from Alertmanager:"
+            echo "$response"
+            
+            # Check if the response contains an error message
+            if [[ "$response" == *"Failed"* || "$response" == *"error"* || "$response" == *"refused"* || "$response" == *"connection"* ]]; then
+              echo "Error occurred while sending notification to Alertmanager."
+              echo "Full response: $response"
+              exit 1
+            else
+              echo "Successfully sent notification to Alertmanager."
+            fi
+        
       
       
 
