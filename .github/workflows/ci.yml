@@ -71,6 +71,7 @@ jobs:
       
           # Debugging output
           echo "Response from Alertmanager: $response"
+      
           
           # Check if the response code is 200 (success)
           if [[ "$response" != *"HTTP/1.1 200 OK"* ]]; then
