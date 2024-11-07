@@ -30,10 +30,13 @@ jobs:
       # Step 2: Set up SSH key for EC2 instance connection
       - name: Set up SSH key
         run: |
-          echo "$AWS_SSH_PRIVATE_KEY" > /home/ubuntu/.ssh/id_rsa
-          chmod 600 /home/ubuntu/.ssh/id_rsa
-          # Add the EC2 server to known hosts
-          ssh-keyscan -H ${{ secrets.INSTANCE_IP }} >> /home/ubuntu/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "$AWS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # Add the remote server to known hosts
+          ssh-keyscan -H ${{ secrets.INSTANCE_IP }} >> ~/.ssh/known_hosts
+        env:
+          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
       # Step 3: Connect to EC2 Instance and Install Dependencies
       - name: Connect to EC2 Instance and Install Dependencies
