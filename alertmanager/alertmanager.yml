@@ -1,6 +1,6 @@
 global:
   resolve_timeout: 5m
-  smtp_require_tls: true
+  smtp_require_tls: true  # Keep this as true for secure email transmission
 
 route:
   receiver: email
@@ -11,9 +11,9 @@ receivers:
       - send_resolved: false
         to: kingsamuel412@gmail.com
         from: melvinsamuel070@gmail.com
-        smarthost: smtp.gmail.com:465  # Change to 465 for SSL
+        smarthost: smtp.gmail.com:587  # Change to 587 for STARTTLS
         auth_username: melvinsamuel070@gmail.com
         auth_password: "zihv khej dtsh ostz"  # Ensure this is the correct app password
         require_tls: true  # Ensure TLS is required for secure connection
         tls_config:
-          insecure_skip_verify: true  # Optional, can be used if you have issues with SSL certificate verification
+          insecure_skip_verify: true  # Optional, only use if you have SSL verification issues
