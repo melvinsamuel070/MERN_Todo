@@ -13,6 +13,7 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
+  DOMAIN: melvinsamuel070.xyz # Replace this with your actual domain
 
 jobs:
   deploy:
@@ -26,34 +27,41 @@ jobs:
            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
            aws-region: ${{ env.AWS_REGION }}  # Using the environment variable defined above
 
+      # Step 2: Set up SSH key for EC2 instance connection
+      - name: Set up SSH key
+        run: |
+          echo "$AWS_SSH_PRIVATE_KEY" > /home/ubuntu/.ssh/id_rsa
+          chmod 600 /home/ubuntu/.ssh/id_rsa
+          # Add the EC2 server to known hosts
+          ssh-keyscan -H ${{ secrets.INSTANCE_IP }} >> /home/ubuntu/.ssh/known_hosts
 
-      # Step 2: Connect to the existing EC2 instance and install necessary dependencies
+      # Step 3: Connect to EC2 Instance and Install Dependencies
       - name: Connect to EC2 Instance and Install Dependencies
         run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             sudo apt update
             sudo apt install -y docker.io docker-compose nginx
             sudo systemctl enable docker nginx
             sudo usermod -aG docker $USER
           EOF
 
-      # Step 3: Copy your project files (frontend, backend, Pushgateway, Grafana) to the EC2 instance
+      # Step 4: Copy your project files (frontend, backend, Pushgateway, Grafana) to the EC2 instance
       - name: Copy Project Files to EC2 Instance
         run: |
-          scp -i "/home/melvin/main-pro.pem" -o StrictHostKeyChecking=no -r ./MERN_Todo_app/ ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+          scp -i "/home/ubuntu/.ssh/id_rsa" -o StrictHostKeyChecking=no -r ./MERN_Todo_app/ ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
 
-      # Step 4: Deploy Services with Docker Compose
+      # Step 5: Deploy Services with Docker Compose
       - name: Deploy Services with Docker Compose
         run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             cd /home/ubuntu/MERN_Todo_app
-            docker compose up -d
+            docker-compose up -d
           EOF
 
-      # Step 5: Configure Nginx as Reverse Proxy
+      # Step 6: Configure Nginx as Reverse Proxy
       - name: Configure Nginx as Reverse Proxy
         run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             sudo tee /etc/nginx/sites-available/default > /dev/null << 'CONFIG'
             server {
               listen 80;
@@ -87,16 +95,16 @@ jobs:
             sudo systemctl restart nginx
           EOF
 
-      # Step 6: Secure Nginx with SSL (Certbot)
+      # Step 7: Secure Nginx with SSL (Certbot)
       - name: Secure Nginx with SSL (Certbot)
         run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             sudo apt update
             sudo apt install -y certbot python3-certbot-nginx
             sudo certbot --nginx --non-interactive --agree-tos --email ${{ secrets.EMAIL_USERNAME }} -d ${{ env.DOMAIN }}
           EOF
 
-      # Step 7: Send Email Notification for Deployment Success
+      # Step 8: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
         with:
