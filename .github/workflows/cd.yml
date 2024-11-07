@@ -9,9 +9,10 @@ on:
         default: 'start_cd_pipeline'
 
 env:
-  DOMAIN: melvinsamuel070.xyz  # Your domain name
-  BACKEND_IMAGE: melvinsamuel070/backend:latest  # Docker image for the backend (if applicable)
-  FRONTEND_IMAGE: melvinsamuel070/frontend1:latest  # Docker image for the frontend (if applicable)
+  AWS_REGION: us-east-1  # Replace this with your AWS region, e.g., us-west-2, eu-west-1, etc.
+  BACKEND_IMAGE: melvinsamuel070/backend:latest
+  FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
+  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
 
 jobs:
   deploy:
@@ -21,9 +22,10 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+           aws-region: ${{ env.AWS_REGION }}  # Using the environment variable defined above
+
 
       # Step 2: Connect to the existing EC2 instance and install necessary dependencies
       - name: Connect to EC2 Instance and Install Dependencies
