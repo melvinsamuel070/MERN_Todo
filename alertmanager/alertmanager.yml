@@ -11,16 +11,12 @@ receivers:
       - send_resolved: true
         to: kingsamuel412@gmail.com
         from: melvinsamuel070@gmail.com
-        smarthost: smtp.gmail.com:587  # SSL on port 465
+        smarthost: smtp.gmail.com:587  # SMTP server for Gmail (port 587 for TLS)
         auth_username: melvinsamuel070@gmail.com
-        auth_password: "wetz gzvg rmbm eqqo"  # Your app password
-        require_tls: true  # SSL should already encrypt the connection
+        auth_password: "wetz gzvg rmbm eqqo"  # Your Gmail App password
+        require_tls: true  # TLS for encryption
         tls_config:
-          insecure_skip_verify: false  # False unless certificate issues arise
-
-
-
-
+          insecure_skip_verify: false  # Ensure verification unless you have certificate issues
 
 # global:
 #   resolve_timeout: 5m
