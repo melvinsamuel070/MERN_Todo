@@ -16,7 +16,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -101,6 +100,16 @@ jobs:
             password: ${{ secrets.EMAIL_PASSWORD }}
             subject: "Build Success: CI Pipeline"
             body: "The build stage of your CI pipeline completed successfully."
-            to: kingsamuel412@gmail.com  # Replace this with the actual recipient's email
+            to: kingsamuel412@gmail.com
             from: ${{ secrets.EMAIL_USERNAME }}
-        
+
+  trigger_cd:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger CD Pipeline
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"event_type": "start_cd_pipeline"}' \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches"

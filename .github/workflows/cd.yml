@@ -1,9 +1,12 @@
 name: CD Pipeline
 
 on:
-  push:
-    branches:
-      - main  # Trigger the pipeline on pushes to the main branch
+  workflow_dispatch:
+    inputs:
+      event_type:
+        description: 'Event to trigger deployment'
+        required: true
+        default: 'start_cd_pipeline'
 
 env:
   DOMAIN: melvinsamuel070.xyz  # Your domain name
@@ -20,109 +23,86 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}  # Set your AWS region (e.g., us-east-1)
+          aws-region: ${{ env.AWS_REGION }}
 
       # Step 2: Connect to the existing EC2 instance and install necessary dependencies
       - name: Connect to EC2 Instance and Install Dependencies
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             sudo apt update
-            sudo apt install -y docker.io docker-compose nginx  # Install Docker, Docker Compose, and Nginx
-            sudo systemctl enable docker nginx  # Enable Docker and Nginx to start on boot
-            sudo usermod -aG docker $USER  # Add the current user to the Docker group
+            sudo apt install -y docker.io docker-compose nginx
+            sudo systemctl enable docker nginx
+            sudo usermod -aG docker $USER
           EOF
-        # **Instructions**: Ensure your EC2 instance has SSH access configured and that your private key file (`main-pro.pem`) is correctly referenced.
 
       # Step 3: Copy your project files (frontend, backend, Pushgateway, Grafana) to the EC2 instance
       - name: Copy Project Files to EC2 Instance
         run: |
           scp -i "/home/melvin/main-pro.pem" -o StrictHostKeyChecking=no -r ./MERN_Todo_app/ ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
-        # **Instructions**: Ensure the directory contains your **frontend**, **backend**, **Pushgateway**, and **Grafana** Docker Compose setup.
 
-      # Step 4: Deploy Backend, Frontend, Pushgateway, and Grafana using Docker Compose
+      # Step 4: Deploy Services with Docker Compose
       - name: Deploy Services with Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-            cd /home/ubuntu/MERN_Todo_app  # Navigate to your project directory
-            docker compose up -d  # Start all services (frontend, backend, Pushgateway, and Grafana)
+            cd /home/ubuntu/MERN_Todo_app
+            docker compose up -d
           EOF
-        # **Instructions**: Ensure the `docker-compose.yml` file correctly includes **frontend**, **backend**, **Pushgateway**, and **Grafana**.
 
-      # Step 5: Configure Nginx as Reverse Proxy for your services
+      # Step 5: Configure Nginx as Reverse Proxy
       - name: Configure Nginx as Reverse Proxy
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             sudo tee /etc/nginx/sites-available/default > /dev/null << 'CONFIG'
             server {
               listen 80;
-              server_name ${{ env.DOMAIN }};  # Use your domain name
-
+              server_name ${{ env.DOMAIN }};
               location / {
-                proxy_pass http://localhost:3000;  # Frontend
+                proxy_pass http://localhost:3000;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               }
-
               location /api/ {
-                proxy_pass http://localhost:3500/;  # Backend
+                proxy_pass http://localhost:3500/;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               }
-
               location /metrics/ {
-                proxy_pass http://localhost:9091/;  # Pushgateway
+                proxy_pass http://localhost:9091/;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               }
-
               location /grafana/ {
-                proxy_pass http://localhost:3001/;  # Grafana
+                proxy_pass http://localhost:3001/;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               }
             }
             CONFIG
-            sudo systemctl restart nginx  # Restart Nginx to apply changes
+            sudo systemctl restart nginx
           EOF
-        # **Instructions**: This configures Nginx to reverse proxy requests for frontend, backend, Pushgateway, and Grafana.
 
-      # Step 6: Secure Nginx with SSL using Certbot
+      # Step 6: Secure Nginx with SSL (Certbot)
       - name: Secure Nginx with SSL (Certbot)
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/melvin/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             sudo apt update
-            sudo apt install -y certbot python3-certbot-nginx  # Install Certbot for SSL
-            sudo certbot --nginx --non-interactive --agree-tos --email ${{ secrets.EMAIL_USERNAME }} -d ${{ env.DOMAIN }}  # Obtain SSL certificate
+            sudo apt install -y certbot python3-certbot-nginx
+            sudo certbot --nginx --non-interactive --agree-tos --email ${{ secrets.EMAIL_USERNAME }} -d ${{ env.DOMAIN }}
           EOF
-        # **Instructions**: Ensure your domain is correctly configured and pointed to your EC2 instance.
 
       # Step 7: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
-        if: success()  # Only send if the previous steps succeeded
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}  # Your email address
-          password: ${{ secrets.EMAIL_PASSWORD }}  # Your email password
-          subject: "Deployment Success: CD Pipeline"
-          body: "The deployment has been successfully completed."
-          to: kingsauel412@gmail.com
-        # **Instructions**: Make sure to configure your Gmail credentials as GitHub Secrets (`EMAIL_USERNAME`, `EMAIL_PASSWORD`).
-
-      # Step 8: Send Email Notification for Deployment Failure
-      - name: Send Email Notification for Deployment Failure
-        if: failure()  # Only send if any step fails
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Deployment Failed"
-          body: "The deployment has failed. Please check the logs."
-          to: recipient@example.com
+            server_address: smtp.gmail.com
+            server_port: 587
+            username: ${{ secrets.EMAIL_USERNAME }}
+            password: ${{ secrets.EMAIL_PASSWORD }}
+            subject: "Deployment Success: CD Pipeline"
+            body: "The deployment of your application completed successfully."
+            to: kingsamuel412@gmail.com
+            from: ${{ secrets.EMAIL_USERNAME }}
