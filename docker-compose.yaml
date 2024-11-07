@@ -90,7 +90,7 @@ services:
     image: prom/alertmanager:v0.27.0
     restart: unless-stopped
     ports:
-      - "9092:9093"  # Map port 9093 for Alertmanager access
+      - "9093:9093"  # Map port 9093 for Alertmanager access
     volumes:
       - /home/melvin/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
