@@ -66,8 +66,8 @@ jobs:
             sleep 6; 
           done
 
-          - name: Notify Alertmanager of Build Success
-          run: |
+      - name: Notify Alertmanager of Build Success
+        run: |
             response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
               {
                 "labels": {
@@ -83,6 +83,8 @@ jobs:
               }
             ]' http://localhost:9092/api/v2/alerts)
         
+            echo "Response Code: $response"
+        
             if [ "$response" -ne 200 ]; then
               echo "Failed to notify Alertmanager: HTTP Status $response"
               exit 1
@@ -90,16 +92,15 @@ jobs:
               echo "Successfully notified Alertmanager of build success."
             fi
         
-
-
-            - name: Send Email Notification for Build Success
-            uses: dawidd6/action-send-mail@v3
-            with:
-              server_address: smtp.gmail.com
-              server_port: 587
-              username: ${{ secrets.EMAIL_USERNAME }}
-              password: ${{ secrets.EMAIL_PASSWORD }}
-              subject: "Build Success: CI Pipeline"
-              body: "The build stage of your CI pipeline completed successfully."
-              to: kingsamuel412@gmail.com  # Replace this with the actual recipient's email
-              from: ${{ secrets.EMAIL_USERNAME }}
+      - name: Send Email Notification for Build Success
+        uses: dawidd6/action-send-mail@v3
+        with:
+            server_address: smtp.gmail.com
+            server_port: 587
+            username: ${{ secrets.EMAIL_USERNAME }}
+            password: ${{ secrets.EMAIL_PASSWORD }}
+            subject: "Build Success: CI Pipeline"
+            body: "The build stage of your CI pipeline completed successfully."
+            to: kingsamuel412@gmail.com  # Replace this with the actual recipient's email
+            from: ${{ secrets.EMAIL_USERNAME }}
+        
