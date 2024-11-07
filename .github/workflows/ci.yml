@@ -38,7 +38,7 @@ jobs:
           path: |
             ./backend/build.log
             ./frontend/build.log
-        # **Instructions**: Ensure your Dockerfiles write logs to these paths, or adjust paths as needed.
+        # Ensure your Dockerfiles write logs to these paths, or adjust paths as needed.
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
@@ -51,7 +51,7 @@ jobs:
 
       - name: Notify Alertmanager of Build Success
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+          response=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d '[
             {
               "labels": {
                 "alertname": "BuildSuccess",
@@ -64,8 +64,8 @@ jobs:
                 "description": "The latest build was successful."
               }
             }
-          ]' http://localhost:9092/api/v2/alerts)
-          
+          ]' ${{ env.ALERTMANAGER_URL }})
+
           if [ "$response" -ne 200 ]; then
             echo "Failed to notify Alertmanager: HTTP Status $response"
             exit 1
