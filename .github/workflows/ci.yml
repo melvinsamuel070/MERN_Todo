@@ -20,6 +20,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+        id: checkout
+        # Debugging output for checking the commit and branch
+      - name: Print Debug Info - Branch and Commit
+        run: |
+          echo "Branch: ${{ github.ref }}"
+          echo "Commit: ${{ github.sha }}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -38,7 +44,6 @@ jobs:
           path: |
             ./backend/build.log
             ./frontend/build.log
-        # Ensure your Dockerfiles write logs to these paths, or adjust paths as needed.
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
@@ -51,7 +56,8 @@ jobs:
 
       - name: Notify Alertmanager of Build Success
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d '[
+          echo "Sending build success notification to Alertmanager..."
+          response=$(curl -v -X POST -H "Content-Type: application/json" -d '[
             {
               "labels": {
                 "alertname": "BuildSuccess",
@@ -66,7 +72,11 @@ jobs:
             }
           ]' ${{ env.ALERTMANAGER_URL }})
 
-          if [ "$response" -ne 200 ]; then
+          # Debugging output for curl response
+          echo "Response from Alertmanager: $response"
+          
+          # Check if the response code is 200 (success)
+          if [[ "$response" != "HTTP/1.1 200 OK" ]]; then
             echo "Failed to notify Alertmanager: HTTP Status $response"
             exit 1
           else
