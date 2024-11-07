@@ -90,14 +90,14 @@ jobs:
               echo "Successfully notified Alertmanager of build success."
             fi
 
-      - name: Send Email Notification for Build Success
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Build Success: CI Pipeline"
-          body: "The build stage of your CI pipeline completed successfully."
-          to: ${{ secrets.EMAIL_RECIPIENT }}
-          from: ${{ secrets.EMAIL_USERNAME }}
+            - name: Send Email Notification for Build Success
+            uses: dawidd6/action-send-mail@v3
+            with:
+              server_address: smtp.gmail.com
+              server_port: 587
+              username: ${{ secrets.EMAIL_USERNAME }}
+              password: ${{ secrets.EMAIL_PASSWORD }}
+              subject: "Build Success: CI Pipeline"
+              body: "The build stage of your CI pipeline completed successfully."
+              to: kingsamuel412@gmail.com  # Replace this with the actual recipient's email
+              from: ${{ secrets.EMAIL_USERNAME }}
