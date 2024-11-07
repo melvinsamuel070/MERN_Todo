@@ -11,11 +11,12 @@ on:
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9093/api/v2/alerts
+  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -50,17 +51,27 @@ jobs:
 
       - name: Notify Alertmanager of Build Success
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '[
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
             {
               "labels": {
                 "alertname": "BuildSuccess",
-                "severity": "info"
+                "severity": "info",
+                "team": "development",
+                "environment": "production"
               },
               "annotations": {
-                "summary": "Build Successful"
+                "summary": "Build Successful",
+                "description": "The latest build was successful."
               }
             }
-          ]' http://localhost:9093/api/v2/alerts
+          ]' http://localhost:9092/api/v2/alerts)
+          
+          if [ "$response" -ne 200 ]; then
+            echo "Failed to notify Alertmanager: HTTP Status $response"
+            exit 1
+          else
+            echo "Successfully notified Alertmanager of build success."
+          fi
 
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
