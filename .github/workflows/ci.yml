@@ -11,7 +11,7 @@ on:
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
+  ALERTMANAGER_URL: http://localhost:9093/api/v2/alerts
 
 jobs:
   build:
@@ -51,9 +51,6 @@ jobs:
       - name: Push Backend Image to Docker Hub
         run: docker push ${{ env.BACKEND_IMAGE }}
 
-      - name: Push Frontend Image to Docker Hub
-        run: docker push ${{ env.FRONTEND_IMAGE }}
-
       - name: Notify Alertmanager of Build Success
         run: |
           echo "Sending build success notification to Alertmanager..."
@@ -71,17 +68,18 @@ jobs:
               }
             }
           ]' ${{ env.ALERTMANAGER_URL }})
-
-          # Debugging output for curl response
+      
+          # Debugging output
           echo "Response from Alertmanager: $response"
           
           # Check if the response code is 200 (success)
-          if [[ "$response" != "HTTP/1.1 200 OK" ]]; then
-            echo "Failed to notify Alertmanager: HTTP Status $response"
+          if [[ "$response" != *"HTTP/1.1 200 OK"* ]]; then
+            echo "Failed to notify Alertmanager: $response"
             exit 1
           else
             echo "Successfully notified Alertmanager of build success."
           fi
+      
 
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
