@@ -51,10 +51,15 @@ jobs:
       - name: Push Backend Image to Docker Hub
         run: docker push ${{ env.BACKEND_IMAGE }}
 
+      - name: Start Alertmanager
+        run: |
+          docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
+      
       - name: Notify Alertmanager of Build Success
+        env:
+          ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
         run: |
           echo "Sending build success notification to Alertmanager..."
-          # Send the notification to Alertmanager
           response=$(curl -v -X POST -H "Content-Type: application/json" -d '[
             {
               "labels": {
@@ -68,20 +73,19 @@ jobs:
                 "description": "The latest build was successful."
               }
             }
-          ]' http://localhost:9092/api/v2/alerts 2>&1)
+          ]' $ALERTMANAGER_URL 2>&1)
       
-          # Debugging output: print the entire response from Alertmanager
           echo "Response from Alertmanager:"
           echo "$response"
           
-          # Check if the response contains an error message
           if [[ "$response" == *"Failed"* || "$response" == *"error"* || "$response" == *"refused"* || "$response" == *"connection"* ]]; then
             echo "Error occurred while sending notification to Alertmanager."
             echo "Full response: $response"
             exit 1
           else
             echo "Successfully sent notification to Alertmanager."
-          fi      
+          fi
+            
         
 
       - name: Send Email Notification for Build Success
