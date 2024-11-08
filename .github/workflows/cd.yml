@@ -126,20 +126,6 @@ jobs:
                    proxy_set_header X-Real-IP $remote_addr;
                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 }
-
-                location /metrics/ {
-                  proxy_pass http://localhost:9091/;
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                }
-
-                location /grafana/ {
-                  proxy_pass http://localhost:3001/;
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                }
               }
             CONFIG
             sudo nginx -t || {echo "Nginx configuration error detected."; exit 1;}
