@@ -40,12 +40,12 @@ jobs:
           AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
         # Explanation: Sets up SSH key authentication for accessing the EC2 instance. The private key is stored in GitHub Secrets as `AWS_SSH_PRIVATE_KEY`.
 
-      # Step 3: Upload Project Directory to EC2 Instance
       - name: Upload Project Directory to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r /home/melvin/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
         env:
-          PROJECT_DIRECTORY: ./MERN_Todo_app  # Use relative path
+          PROJECT_DIRECTORY: /home/melvin/MERN_Todo_app  # Ensure the path is correct
+      
         # Explanation: Copies the project files from the local repository to the EC2 instance using SCP.
 
       # Step 4: Install Docker and Dependencies on EC2 Instance with Debugging
