@@ -42,13 +42,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 4: Check project directory contents to ensure MERN_Todo_app exists
+      # Step 4: Check project directory contents
       - name: Check project directory contents
         run: ls -l $GITHUB_WORKSPACE
 
       # Step 5: Upload Project Directory to EC2
       - name: Upload Project Directory to EC2
         run: |
+          echo "Uploading project to EC2 instance..."
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r $GITHUB_WORKSPACE/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
         env:
           PROJECT_DIRECTORY: $GITHUB_WORKSPACE/MERN_Todo_app
