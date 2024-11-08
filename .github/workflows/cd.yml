@@ -46,6 +46,7 @@ jobs:
             echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
             echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
 
+
             # Ensure hostname resolution
             sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
 
@@ -121,10 +122,10 @@ jobs:
                 }
 
                 location /api/ {
-                  proxy_pass http://localhost:3500/;
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                   proxy_pass http://localhost:3500/;
+                   proxy_set_header Host $host;
+                   proxy_set_header X-Real-IP $remote_addr;
+                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 }
 
                 location /metrics/ {
@@ -142,7 +143,7 @@ jobs:
                 }
               }
             CONFIG
-            sudo nginx -t || { echo "Nginx configuration error detected."; exit 1; }
+            sudo nginx -t || {echo "Nginx configuration error detected."; exit 1;}
             sudo systemctl restart nginx
           EOF
 
