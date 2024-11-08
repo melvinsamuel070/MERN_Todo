@@ -42,17 +42,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 4: Check project directory contents
+      # Check the contents of the workspace
       - name: Check project directory contents
         run: ls -l $GITHUB_WORKSPACE
 
-      # Step 5: Upload Project Directory to EC2
+      # Upload the directory
       - name: Upload Project Directory to EC2
         run: |
           echo "Uploading project to EC2 instance..."
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r $GITHUB_WORKSPACE/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
-        env:
-          PROJECT_DIRECTORY: $GITHUB_WORKSPACE/MERN_Todo_app
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r $GITHUB_WORKSPACE/MERN_Todo/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
 
       # Step 6: Optional - Additional deployment steps like extracting files, restarting services, etc.
       - name: Restart services (if needed)
