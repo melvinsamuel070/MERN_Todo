@@ -85,6 +85,25 @@ jobs:
             sudo usermod -aG docker $USER
           EOF
 
+      # Step 4: Test Nginx Configuration for Syntax Errors
+      - name: Test Nginx Configuration
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            sudo nginx -t || exit 1
+          EOF
+
+      # Step 5: Debugging Nginx Configuration if it Fails
+      - name: Debug Nginx Configuration
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            # Print the contents of the Nginx configuration file to catch syntax issues
+            echo "Nginx configuration file contents:"
+            cat /etc/nginx/sites-available/default
+            # Display the last 10 lines of the Nginx error logs
+            echo "Nginx error log:"
+            sudo tail -n 10 /var/log/nginx/error.log
+          EOF
+
       # Step 6: Configure Nginx as Reverse Proxy
       - name: Configure Nginx as Reverse Proxy
         run: |
@@ -123,6 +142,7 @@ jobs:
                 }
               }
             CONFIG
+            sudo nginx -t || { echo "Nginx configuration error detected."; exit 1; }
             sudo systemctl restart nginx
           EOF
 
