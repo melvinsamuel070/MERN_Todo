@@ -28,15 +28,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Step 2: Set up SSH key for EC2 instance connection
-      - name: Set up SSH key
+      - name: Copy Project Files to EC2 Instance
         run: |
-          mkdir -p ~/.ssh
-          echo "$AWS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.INSTANCE_IP }} >> ~/.ssh/known_hosts
+            mkdir -p ~/.ssh
+            echo "$AWS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./MERN_Todo_app/ ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
         env:
-          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+            AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+        
 
       # Step 3: Checkout code from repository
       - name: Checkout code
