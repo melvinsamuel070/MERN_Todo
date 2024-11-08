@@ -93,7 +93,7 @@ jobs:
               server {
                 listen 80;
                 server_name ${{ env.DOMAIN }};
-
+    
                 location / {
                   proxy_pass http://localhost:3000;
                   proxy_set_header Host $host;
