@@ -9,11 +9,11 @@ on:
         default: 'start_cd_pipeline'
 
 env:
-  AWS_REGION: us-east-1  # Replace this with your AWS region, e.g., us-west-2, eu-west-1, etc.
+  AWS_REGION: us-east-1  # Replace this with your AWS region
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-  DOMAIN: melvinsamuel070.xyz # Replace this with your actual domain
+  DOMAIN: melvinsamuel070.xyz  # Replace with your actual domain
 
 jobs:
   deploy:
@@ -25,7 +25,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}  # Using the environment variable defined above
+          aws-region: ${{ env.AWS_REGION }}
 
       # Step 2: Set up SSH key for EC2 instance connection
       - name: Set up SSH key
@@ -33,58 +33,49 @@ jobs:
           mkdir -p ~/.ssh
           echo "$AWS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Add the remote server to known hosts
           ssh-keyscan -H ${{ secrets.INSTANCE_IP }} >> ~/.ssh/known_hosts
         env:
           AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
-            # Step 3: Connect to EC2 Instance and Install Dependencies
-      - name: Connect to EC2 Instance and Install Dependencies
+      # Step 3: Connect to EC2 Instance and Install Dependencies with Debugging
+      - name: Connect to EC2 Instance and Install Dependencies with Debugging
         run: |
-              ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-                # Update DNS settings to improve network reliability
-                echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
-                echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
-                
-                # Ensure hostname resolution
-                sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
-    
-                # Update package lists and install required packages
-                sudo apt-get update
-                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-    
-                # Add Docker's official GPG key
-                sudo install -m 0755 -d /etc/apt/keyrings
-                sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-                sudo chmod a+r /etc/apt/keyrings/docker.asc
-    
-                # Add the Docker repository, if supported
-                echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                sudo apt-get update
-    
-                # Install Docker packages with a fallback for unsupported versions
-                if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
-                  echo "Docker installation succeeded."
-                else
-                  echo "Docker repository installation failed, trying alternative installation."
-                  curl -fsSL https://get.docker.com -o get-docker.sh
-                  sudo sh get-docker.sh
-                fi
-    
-                # Verify Docker installation
-                docker --version || { echo "Docker installation failed"; exit 1; }
-    
-                # Enable Docker service
-                sudo systemctl enable docker
-                sudo systemctl start docker
-    
-                # Install Docker Compose plugin
-                sudo apt-get install -y docker-compose-plugin
-    
-                # Add user to the Docker group to avoid needing sudo for Docker commands
-                sudo usermod -aG docker $USER
-              EOF    
-   
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
+
+            # Update DNS settings
+            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+            echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+
+            # Ensure hostname resolution
+            sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
+
+            # Install required packages
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+            # Docker installation
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+              echo "Docker installation succeeded."
+            else
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            fi
+
+            # Enable Docker service
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            sudo apt-get install -y docker-compose-plugin
+            sudo usermod -aG docker $USER
+            set +x
+          EOF
+
       # Step 6: Configure Nginx as Reverse Proxy
       - name: Configure Nginx as Reverse Proxy
         run: |
