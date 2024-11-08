@@ -46,7 +46,6 @@ jobs:
             echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
             echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
 
-
             # Ensure hostname resolution
             sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
 
