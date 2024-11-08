@@ -38,86 +38,86 @@ jobs:
         env:
           AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
-            # Step 3: Connect to EC2 Instance and Install Dependencies
+      # Step 3: Connect to EC2 Instance and Install Dependencies
       - name: Connect to EC2 Instance and Install Dependencies
         run: |
-              ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-                # Update DNS settings to improve network reliability
-                echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
-                echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
-                
-                # Ensure hostname resolution
-                sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
-    
-                # Update package lists and install required packages
-                sudo apt-get update
-                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-    
-                # Add Docker's official GPG key
-                sudo install -m 0755 -d /etc/apt/keyrings
-                sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-                sudo chmod a+r /etc/apt/keyrings/docker.asc
-    
-                # Add the Docker repository, if supported
-                echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                sudo apt-get update
-    
-                # Install Docker packages with a fallback for unsupported versions
-                if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
-                  echo "Docker installation succeeded."
-                else
-                  echo "Docker repository installation failed, trying alternative installation."
-                  curl -fsSL https://get.docker.com -o get-docker.sh
-                  sudo sh get-docker.sh
-                fi
-    
-                # Verify Docker installation
-                docker --version || { echo "Docker installation failed"; exit 1; }
-    
-                # Enable Docker service
-                sudo systemctl enable docker
-                sudo systemctl start docker
-    
-                # Install Docker Compose plugin
-                sudo apt-get install -y docker-compose-plugin
-    
-                # Add user to the Docker group to avoid needing sudo for Docker commands
-                sudo usermod -aG docker $USER
-              EOF    
-   
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            # Update DNS settings to improve network reliability
+            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+            echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+
+            # Ensure hostname resolution
+            sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
+
+            # Update package lists and install required packages
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+            # Add Docker's official GPG key
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+            # Add the Docker repository, if supported
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+
+            # Install Docker packages with a fallback for unsupported versions
+            if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+              echo "Docker installation succeeded."
+            else
+              echo "Docker repository installation failed, trying alternative installation."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            fi
+
+            # Verify Docker installation
+            docker --version || { echo "Docker installation failed"; exit 1; }
+
+            # Enable Docker service
+            sudo systemctl enable docker
+            sudo systemctl start docker
+
+            # Install Docker Compose plugin
+            sudo apt-get install -y docker-compose-plugin
+
+            # Add user to the Docker group to avoid needing sudo for Docker commands
+            sudo usermod -aG docker $USER
+          EOF
+
       # Step 6: Configure Nginx as Reverse Proxy
       - name: Configure Nginx as Reverse Proxy
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             sudo tee /etc/nginx/sites-available/default > /dev/null << 'CONFIG'
-            server {
-              listen 80;
-              server_name ${{ env.DOMAIN }};
-              location / {
-                proxy_pass http://localhost:3000;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              server {
+                listen 80;
+                server_name ${{ env.DOMAIN }};
+                location / {
+                  proxy_pass http://localhost:3000;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                }
+                location /api/ {
+                  proxy_pass http://localhost:3500/;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                }
+                location /metrics/ {
+                  proxy_pass http://localhost:9091/;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                }
+                location /grafana/ {
+                  proxy_pass http://localhost:3001/;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                }
               }
-              location /api/ {
-                proxy_pass http://localhost:3500/;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              }
-              location /metrics/ {
-                proxy_pass http://localhost:9091/;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              }
-              location /grafana/ {
-                proxy_pass http://localhost:3001/;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              }
-            }
             CONFIG
             sudo systemctl restart nginx
           EOF
@@ -135,11 +135,11 @@ jobs:
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
         with:
-            server_address: smtp.gmail.com
-            server_port: 587
-            username: ${{ secrets.EMAIL_USERNAME }}
-            password: ${{ secrets.EMAIL_PASSWORD }}
-            subject: "Deployment Success: CD Pipeline"
-            body: "The deployment of your application completed successfully."
-            to: kingsamuel412@gmail.com
-            from: ${{ secrets.EMAIL_USERNAME }}
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Deployment Success: CD Pipeline"
+          body: "The deployment of your application completed successfully."
+          to: kingsamuel412@gmail.com
+          from: ${{ secrets.EMAIL_USERNAME }}
