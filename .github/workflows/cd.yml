@@ -29,23 +29,33 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
         # Explanation: Configures AWS CLI using stored secrets for AWS access. You'll need to store `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in GitHub Secrets.
 
-      # Step 2: Set up SSH key for EC2 instance connection
+      # Step 2: Set up SSH key (if necessary)
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "$AWS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.INSTANCE_IP }} >> ~/.ssh/known_hosts
-        env:
-          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-        # Explanation: Sets up SSH key authentication for accessing the EC2 instance. The private key is stored in GitHub Secrets as `AWS_SSH_PRIVATE_KEY`.
 
+      # Step 3: Compress the project directory (Optional if already compressed)
+      - name: Compress the project directory
+        run: |
+          cd /home/melvin
+          tar -czvf MERN_Todo_app.tar.gz MERN_Todo_app/
+
+      # Step 4: Upload the archive to EC2 using SCP
       - name: Upload Project Directory to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r /home/melvin/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
-        env:
-          PROJECT_DIRECTORY: /home/melvin/MERN_Todo_app  # Ensure the path is correct
-      
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa /home/melvin/MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+
+      # Step 5: SSH into EC2 and extract the archive
+      - name: Extract Project on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "cd /home/ubuntu && tar -xzvf MERN_Todo_app.tar.gz"
+
+      # Optional: Additional deployment steps like restarting services, etc.
+      - name: Restart Backend and Frontend (if necessary)
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "cd /home/ubuntu/MERN_Todo_app && docker-compose down && docker-compose up -d"
         # Explanation: Copies the project files from the local repository to the EC2 instance using SCP.
 
       # Step 4: Install Docker and Dependencies on EC2 Instance with Debugging
