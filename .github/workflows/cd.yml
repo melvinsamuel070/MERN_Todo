@@ -43,9 +43,9 @@ jobs:
       # Step 3: Upload Project Directory to EC2 Instance
       - name: Upload Project Directory to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r /home/melvin/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ${{ env.PROJECT_DIRECTORY }} ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
         env:
-          PROJECT_DIRECTORY: /  # Update with the relative path to your project
+          PROJECT_DIRECTORY: /home/melvin/MERN_Todo_app  # Update this path to your actual project directory location
         # Explanation: Copies the project files from the local repository to the EC2 instance using SCP.
 
       # Step 4: Install Docker and Dependencies on EC2 Instance with Debugging
