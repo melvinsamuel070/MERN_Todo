@@ -43,7 +43,7 @@ jobs:
       # Step 3: Upload Project Directory to EC2 Instance
       - name: Upload Project Directory to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r .home/melvin/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./home/melvin/MERN_Todo_app ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
         env:
           PROJECT_DIRECTORY: ./  # Update with the relative path to your project
         # Explanation: Copies the project files from the local repository to the EC2 instance using SCP.
