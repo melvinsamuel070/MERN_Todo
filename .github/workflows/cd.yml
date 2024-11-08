@@ -38,46 +38,52 @@ jobs:
         env:
           AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
-      # Step 3: Connect to EC2 Instance and Install Dependencies
+            # Step 3: Connect to EC2 Instance and Install Dependencies
       - name: Connect to EC2 Instance and Install Dependencies
         run: |
-             ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-               # Update DNS settings to resolve network issues
-               echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
-               echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
-               
-               # Update package lists and install essential packages
-               sudo apt update
-               sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-   
-               # Attempt to install Nginx
-               sudo apt install -y nginx || { echo "Nginx installation failed"; exit 1; }
-   
-             # Docker Installation
-               # Add Docker's official GPG key
-               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/trusted.gpg.d/docker.asc
-               
-               # Add Docker repository
-               sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-               sudo apt update
-               
-               # Install Docker and Docker Compose using the repository method, or use alternative script if it fails
-               sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose || {
-                 echo "Repository-based Docker installation failed, using alternative method.";
-                 curl -fsSL https://get.docker.com -o get-docker.sh
-                 sudo sh get-docker.sh
-               }
-               
-               # Verify Docker installation
-               docker --version || { echo "Docker installation failed"; exit 1; }
-               
-               # Enable Docker and Nginx services
-               sudo systemctl enable docker nginx
-               sudo systemctl start docker nginx
-               
-               # Add user to the Docker group to avoid using sudo for Docker commands
-               sudo usermod -aG docker $USER
-             EOF
+              ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+                # Update DNS settings to improve network reliability
+                echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+                echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+                
+                # Ensure hostname resolution
+                sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
+    
+                # Update package lists and install required packages
+                sudo apt-get update
+                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+    
+                # Add Docker's official GPG key
+                sudo install -m 0755 -d /etc/apt/keyrings
+                sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+                sudo chmod a+r /etc/apt/keyrings/docker.asc
+    
+                # Add the Docker repository, if supported
+                echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                sudo apt-get update
+    
+                # Install Docker packages with a fallback for unsupported versions
+                if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+                  echo "Docker installation succeeded."
+                else
+                  echo "Docker repository installation failed, trying alternative installation."
+                  curl -fsSL https://get.docker.com -o get-docker.sh
+                  sudo sh get-docker.sh
+                fi
+    
+                # Verify Docker installation
+                docker --version || { echo "Docker installation failed"; exit 1; }
+    
+                # Enable Docker service
+                sudo systemctl enable docker
+                sudo systemctl start docker
+    
+                # Install Docker Compose plugin
+                sudo apt-get install -y docker-compose-plugin
+    
+                # Add user to the Docker group to avoid needing sudo for Docker commands
+                sudo usermod -aG docker $USER
+              EOF    
    
       # Step 6: Configure Nginx as Reverse Proxy
       - name: Configure Nginx as Reverse Proxy
