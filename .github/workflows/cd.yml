@@ -43,12 +43,12 @@ jobs:
         run: |
          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
            sudo apt update
-           sudo apt install -y docker.io docker-compose nginx
+           sudo apt install -y docker.io docker compose nginx
            sudo systemctl enable docker nginx
            sudo usermod -aG docker $USER
 
            # Docker CE Installation
-           sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+           sudo apt-get install docker ce docker ce cli containerd.io docker buildx plugin docker compose plugin
            # Add Docker's official GPG key
            sudo apt-get update
            sudo apt-get install -y ca-certificates curl
@@ -63,11 +63,11 @@ jobs:
              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
            sudo apt-get update
-           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+           sudo chmod +x /usr/local/lib/docker/cli plugins/docker compose
            sudo apt-get update
-           sudo apt-get install -y docker-compose-plugin
+           sudo apt-get install -y docker compose plugin
            sudo apt-get update
-           sudo apt-get install -y docker-compose-plugin
+           sudo apt-get install -y docker compose plugin
 
            # End of Docker Installation Section
          EOF
