@@ -41,29 +41,44 @@ jobs:
       # Step 3: Connect to EC2 Instance and Install Dependencies
       - name: Connect to EC2 Instance and Install Dependencies
         run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-            # Update package lists and install essential packages
-            sudo apt update
-            sudo apt install -y apt-transport-https ca-certificates curl software-properties-common nginx
-
-            # Docker Installation - Add Docker's official GPG key
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/trusted.gpg.d/docker.asc
-
-            # Add Docker repository
-            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-            sudo apt update
-
-            # Install Docker and Docker Compose
-            sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose
-
-            # Enable Docker and Nginx services
-            sudo systemctl enable docker nginx
-            sudo systemctl start docker nginx
-
-            # Add user to the Docker group to avoid using sudo for Docker commands
-            sudo usermod -aG docker $USER
-          EOF
-
+             ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+               # Update DNS settings to resolve network issues
+               echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+               echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+               
+               # Update package lists and install essential packages
+               sudo apt update
+               sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+   
+               # Attempt to install Nginx
+               sudo apt install -y nginx || { echo "Nginx installation failed"; exit 1; }
+   
+             # Docker Installation
+               # Add Docker's official GPG key
+               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/trusted.gpg.d/docker.asc
+               
+               # Add Docker repository
+               sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+               sudo apt update
+               
+               # Install Docker and Docker Compose using the repository method, or use alternative script if it fails
+               sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose || {
+                 echo "Repository-based Docker installation failed, using alternative method.";
+                 curl -fsSL https://get.docker.com -o get-docker.sh
+                 sudo sh get-docker.sh
+               }
+               
+               # Verify Docker installation
+               docker --version || { echo "Docker installation failed"; exit 1; }
+               
+               # Enable Docker and Nginx services
+               sudo systemctl enable docker nginx
+               sudo systemctl start docker nginx
+               
+               # Add user to the Docker group to avoid using sudo for Docker commands
+               sudo usermod -aG docker $USER
+             EOF
+   
       # Step 6: Configure Nginx as Reverse Proxy
       - name: Configure Nginx as Reverse Proxy
         run: |
