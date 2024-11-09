@@ -1,12 +1,9 @@
 name: CD Pipeline
 
 on:
-  workflow_dispatch:
-    inputs:
-      event_type:
-        description: 'Event to trigger deployment'
-        required: true
-        default: 'start_cd_pipeline'
+  push:
+    branches:
+      - main  # Automatically triggers on pushes to the main branch
 
 env:
   AWS_REGION: us-east-1
