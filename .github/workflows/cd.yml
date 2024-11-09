@@ -1,9 +1,11 @@
-name: CD
+name: CD Pipeline
 
 on:
-  push:
-    branches:
-      - master
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
 env:
   AWS_REGION: us-east-1
   BACKEND_IMAGE: melvinsamuel070/backend:latest
@@ -50,7 +52,10 @@ jobs:
             sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
             sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
             sudo apt-get update
-            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker compose
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose
+
+          # Add the ubuntu user to the docker group
+            sudo usermod -aG docker ubuntu
 
             # Enable Docker service
             sudo systemctl enable docker
@@ -60,18 +65,18 @@ jobs:
       # Step 4: Copy the docker-compose.yml file to EC2 instance
       - name: Copy docker-compose.yml to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ./docker compose.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/docker-compose.yml
+          scp -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ./docker-compose.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/docker-compose.yml
 
       # Step 5: Deploy application using Docker Compose on EC2
       - name: Deploy Application with Docker Compose
         run: |
           ssh -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-            # Navigate to the directory where the docker compose.yml is copied
+            # Navigate to the directory where the docker-compose.yml is copied
             cd /home/ubuntu
 
             # Pull the latest Docker images and restart the services
-            docker compose pull
-            docker compose up -d
+            docker-compose pull
+            docker-compose up -d
           EOF
 
       # Step 6: Send email notification about successful deployment

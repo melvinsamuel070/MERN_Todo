@@ -1,11 +1,9 @@
 name: CI Pipeline
 
 on:
-  workflow_run:
-    workflows: ["CD"]
-    types:
-      - completed
-
+  push:
+    branches:
+      - master  
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
