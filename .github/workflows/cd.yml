@@ -41,18 +41,7 @@ jobs:
             # Ensure hostname resolution
             sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
 
-            # Handle dpkg lock and update package list
-            while sudo lsof /var/lib/dpkg/lock-frontend; do
-              echo "Waiting for dpkg lock to be released..."
-              sleep 1
-            done
-
-            # Ensure no apt-get process is running before continuing
-            sudo killall apt-get || true
-            sudo killall dpkg || true
-
-            # Update package list
-            sudo apt-get update
+            
 
             # Install Docker, Docker Compose, Nginx, and npm
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
