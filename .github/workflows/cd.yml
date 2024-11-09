@@ -52,12 +52,29 @@ jobs:
             # Add Docker to the sudoers group
             sudo usermod -aG docker ubuntu
             
-            # Enable Docker and Nginx services
-            sudo systemctl enable docker
-            sudo systemctl start docker
-            sudo systemctl enable nginx
-            sudo systemctl start nginx
+             # Check and enable Docker service
+            if command -v docker &> /dev/null
+            then
+              echo "Docker is installed"
+              sudo systemctl enable docker
+              sudo systemctl start docker
+            else
+              echo "Docker installation failed"
+              exit 1
+            fi
+
+            # Check and enable Nginx service
+            if command -v nginx &> /dev/null
+            then
+              echo "Nginx is installed"
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+            else
+              echo "Nginx installation failed"
+              exit 1
+            fi
           EOF
+
 
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
