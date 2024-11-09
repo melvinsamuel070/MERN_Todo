@@ -40,22 +40,33 @@ jobs:
             echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
             # Ensure hostname resolution
             sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
-            
-            # Install Docker, Docker Compose, Nginx, and npm
+
+            # Handle dpkg lock and update package list
+            while sudo lsof /var/lib/dpkg/lock-frontend; do
+              echo "Waiting for dpkg lock to be released..."
+              sleep 1
+            done
+
+            # Ensure no apt-get process is running before continuing
+            sudo killall apt-get || true
+            sudo killall dpkg || true
+
+            # Update package list
             sudo apt-get update
+
+            # Install Docker, Docker Compose, Nginx, and npm
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
             sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/trusted.gpg.d/docker.asc
             sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose nginx npm
-            
-            # Add Docker to the sudoers group
-            sudo usermod -aG docker ubuntu
-            
-             # Check and enable Docker service
+
+            # Check if Docker is installed successfully
             if command -v docker &> /dev/null
             then
               echo "Docker is installed"
+              # Add Docker to the sudoers group if not already done
+              sudo usermod -aG docker ubuntu
               sudo systemctl enable docker
               sudo systemctl start docker
             else
@@ -63,7 +74,7 @@ jobs:
               exit 1
             fi
 
-            # Check and enable Nginx service
+            # Check if Nginx is installed successfully
             if command -v nginx &> /dev/null
             then
               echo "Nginx is installed"
@@ -75,6 +86,57 @@ jobs:
             fi
           EOF
 
+      # Step 4: Install Docker and Dependencies on EC2 Instance with Debugging
+      - name: Install Docker and Dependencies on EC2 Instance with Debugging
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
+
+            # Update DNS settings
+            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+            echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+            # Ensure hostname resolution
+            sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
+            # Install required packages
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+            # Docker installation
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+              echo "Docker installation succeeded."
+            else
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            fi
+            # Enable Docker service
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            sudo apt-get install -y docker-compose-plugin
+            sudo usermod -aG docker $USER
+            set +x
+          EOF
+        # Explanation: Installs Docker and Docker Compose on the EC2 instance. Debugging enabled with set commands to log errors.
+
+      # Step 5: Start Docker Compose on EC2 Instance with Debugging
+      - name: Start Docker Compose on EC2 with Debugging
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
+
+            # Navigate to project directory and start Docker Compose
+            cd /home/ubuntu/MERN_Todo_app
+            docker compose up -d
+
+            set +x
+          EOF
+        # Explanation: Deploys the application with Docker Compose
+        # Debugging is enabled to help troubleshoot any issues during deployment.
 
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
