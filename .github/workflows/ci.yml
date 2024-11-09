@@ -1,9 +1,9 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
     branches:
-      - main  # Automatically triggers on pushes to the main branch
+      - master
 
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest

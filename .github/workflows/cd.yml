@@ -1,9 +1,13 @@
 name: CD Pipeline
 
 on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
   push:
     branches:
-      - main  # Automatically triggers on pushes to the main branch
+      - master  # Automatically triggers on pushes to the master branch
 
 env:
   AWS_REGION: us-east-1
@@ -14,7 +18,9 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -22,6 +28,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # Step 2: Set up SSH key for connecting to the EC2 instance
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
@@ -31,6 +38,7 @@ jobs:
         env:
           AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
+      # Step 3: Connect to EC2 instance, install Docker and Docker Compose
       - name: Connect to EC2 Instance and Install Dependencies
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
@@ -54,6 +62,24 @@ jobs:
             sudo systemctl start docker
           EOF
 
+      # Step 4: Copy the docker-compose.yml file to EC2 instance
+      - name: Copy docker-compose.yml to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ./docker-compose.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/docker-compose.yml
+
+      # Step 5: Deploy application using Docker Compose on EC2
+      - name: Deploy Application with Docker Compose
+        run: |
+          ssh -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            # Navigate to the directory where the docker-compose.yml is copied
+            cd /home/ubuntu
+
+            # Pull the latest Docker images and restart the services
+            docker compose pull
+            docker compose up -d
+          EOF
+
+      # Step 6: Send email notification about successful deployment
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
         with:
@@ -65,3 +91,5 @@ jobs:
           body: "The deployment of your application completed successfully."
           to: kingsamuel412@gmail.com
           from: ${{ secrets.EMAIL_USERNAME }}
+
+      # (Optional) Add cleanup steps or post-deployment tasks here
