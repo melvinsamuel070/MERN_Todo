@@ -44,7 +44,7 @@ jobs:
             # Install Docker, Docker Compose, Nginx, and npm
             sudo apt-get update
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/trusted.gpg.d/docker.asc
             sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose nginx npm
@@ -59,7 +59,6 @@ jobs:
             sudo systemctl start nginx
           EOF
 
-      # Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
         with:
