@@ -84,6 +84,10 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y nginx
 
+            # Ensure the required directories exist
+            sudo mkdir -p /etc/nginx/sites-available
+            sudo mkdir -p /etc/nginx/sites-enabled
+
             # Start Nginx service
             sudo systemctl enable nginx
             sudo systemctl start nginx
