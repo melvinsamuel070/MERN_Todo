@@ -79,9 +79,16 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
             set -x
             trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+            
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+          set -x
+          trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+ 
+           # Run dpkg configuration and proceed with other steps
+           sudo dpkg --configure -a
+           # Additional commands...
+          EOF
 
-             # Resolve dpkg issues
-              sudo dpkg --configure -a     
 
 
             # Update package lists and install Nginx
