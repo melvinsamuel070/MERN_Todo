@@ -295,10 +295,6 @@
 
 
 
-
-
-#!/bin/bash
-
 # Enable debugging and set error handling
 set -x
 trap 'echo "Error on line $LINENO"; exit 1' ERR
@@ -343,7 +339,7 @@ FRONTEND_TG_ARN=$(aws elbv2 create-target-group \
     --target-type instance \
     --health-check-protocol HTTP \
     --health-check-port "$FRONTEND_PORT" \
-    --health-check-path "34.199.42.249:3000" \
+    --health-check-path "/" \  # Corrected: "/" is the standard path for health checks
     --query 'TargetGroups[0].TargetGroupArn' \
     --output text)
 echo "Frontend Target Group ARN: $FRONTEND_TG_ARN"
@@ -359,7 +355,7 @@ BACKEND_TG_ARN=$(aws elbv2 create-target-group \
     --target-type instance \
     --health-check-protocol HTTP \
     --health-check-port "$BACKEND_PORT" \
-    --health-check-path "34.199.42.249:3500/todo" \
+    --health-check-path "/health" \  # Adjust if backend has a specific health check endpoint
     --query 'TargetGroups[0].TargetGroupArn' \
     --output text)
 echo "Backend Target Group ARN: $BACKEND_TG_ARN"

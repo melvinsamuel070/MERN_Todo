@@ -108,7 +108,7 @@ jobs:
               # Reload Nginx service to apply changes
               sudo systemctl reload nginx
             EOF
-          env:
+        env:
             INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
             DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
             EMAIL: ${{ secrets.EMAIL }}
