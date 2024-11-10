@@ -80,6 +80,10 @@ jobs:
             set -x
             trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
 
+             # Resolve dpkg issues
+              sudo dpkg --configure -a     
+
+
             # Update package lists and install Nginx
             sudo apt-get update
             sudo apt-get install -y nginx
