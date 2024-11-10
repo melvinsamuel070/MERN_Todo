@@ -26,19 +26,21 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up SSH key
+      - name: Set up SSH Key
         run: |
-           mkdir -p ~/.ssh
+            mkdir -p ~/.ssh
             echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
             ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
         env:
             AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
         
+        
       # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
       - name: Test SSH Connection
-        run: |
-         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+        run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+        env:
+             INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
 
       - name: Install Docker and Dependencies on EC2 Instance with Debugging
         run: |
@@ -77,44 +79,40 @@ jobs:
             set +x
           EOF
 
-      # Step 4: Install and Configure Nginx on EC2 Instance with SSL (Certbot)
-      - name: Install and Configure Nginx with SSL for melvinsamuel070.xyz
-        run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-            set -x
-            trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
-            
-          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-          set -x
-          trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
- 
-           # Run dpkg configuration and proceed with other steps
-           sudo dpkg --configure -a
-           # Additional commands...
-          EOF
-
-
-
-            # Update package lists and install Nginx
-            sudo apt-get update
-            sudo apt-get install -y nginx
-
-            # Install Certbot and Nginx plugin
-            sudo apt-get install -y certbot python3-certbot-nginx
-
-            # Enable and start Nginx service
-            sudo systemctl enable nginx
-            sudo systemctl start nginx
-
-            # Obtain SSL certificate with Certbot
-            sudo certbot --nginx -d melvinsamuel070.xyz --non-interactive --agree-tos --email melvinsamuel070@gmail.com
-
-            # Test Nginx configuration
-            sudo nginx -t
-
-            # Reload Nginx service to apply changes
-            sudo systemctl reload nginx
-          EOF
+          - name: Deploy and Configure Instance
+          run: |
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              set -x
+              trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+              
+              # Run dpkg configuration
+              sudo dpkg --configure -a
+              
+              # Update package lists and install Nginx
+              sudo apt-get update
+              sudo apt-get install -y nginx
+              
+              # Install Certbot and Nginx plugin
+              sudo apt-get install -y certbot python3-certbot-nginx
+              
+              # Enable and start Nginx service
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+              
+              # Obtain SSL certificate with Certbot
+              sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
+              
+              # Test Nginx configuration
+              sudo nginx -t
+              
+              # Reload Nginx service to apply changes
+              sudo systemctl reload nginx
+            EOF
+          env:
+            INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+            DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+            EMAIL: ${{ secrets.EMAIL }}
+        
 
       # Step 5: Configure Nginx Reverse Proxy
       - name: Configure Nginx Reverse Proxy for Frontend and Backend
