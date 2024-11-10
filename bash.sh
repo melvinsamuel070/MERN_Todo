@@ -305,11 +305,11 @@ trap 'echo "Error on line $LINENO"; exit 1' ERR
 
 # Variables
 AWS_REGION="us-east-1"
-VPC_ID="vpc-0123456789abcdef0"                       # Replace with your VPC ID
-SUBNET_IDS="subnet-0123456789abcdef0,subnet-1234567890abcdef1" # Replace with your Subnet IDs
-SECURITY_GROUP_ID="sg-0123456789abcdef0"              # Replace with your Security Group ID
-EXISTING_INSTANCE_ID="i-0123456789abcdef0"            # Replace with your instance ID
-AMI_ID="ami-0c55b159cbfafe1f0"                        # Replace with your AMI ID
+VPC_ID="vpc-06349688cec80497a"                       # Replace with your VPC ID
+SUBNET_IDS="subnet-096394880b9a77904,subnet-0afa998e4cb61fc10" # Replace with your Subnet IDs
+SECURITY_GROUP_ID="sg-0cf064343aed6695f"              # Replace with your Security Group ID
+EXISTING_INSTANCE_ID="i-02b2eb5ea2457e397"            # Replace with your instance ID
+AMI_ID="ami-0866a3c8686eaeeba"                        # Replace with your AMI ID
 INSTANCE_TYPE="t3.micro"                              # Adjust instance type as needed
 KEY_PAIR="main-pro.pem"                              # Replace with your Key Pair
 FRONTEND_PORT=3000                                    # Adjust frontend port if different
@@ -343,7 +343,7 @@ FRONTEND_TG_ARN=$(aws elbv2 create-target-group \
     --target-type instance \
     --health-check-protocol HTTP \
     --health-check-port "$FRONTEND_PORT" \
-    --health-check-path "/" \
+    --health-check-path "34.199.42.249:3000" \
     --query 'TargetGroups[0].TargetGroupArn' \
     --output text)
 echo "Frontend Target Group ARN: $FRONTEND_TG_ARN"
@@ -359,7 +359,7 @@ BACKEND_TG_ARN=$(aws elbv2 create-target-group \
     --target-type instance \
     --health-check-protocol HTTP \
     --health-check-port "$BACKEND_PORT" \
-    --health-check-path "/health" \
+    --health-check-path "34.199.42.249:3500/todo" \
     --query 'TargetGroups[0].TargetGroupArn' \
     --output text)
 echo "Backend Target Group ARN: $BACKEND_TG_ARN"
@@ -422,7 +422,7 @@ echo "Attached to Backend Target Group."
 echo "Checking Prometheus Alerts..."
 
 # Simulate checking Prometheus alert status (replace with actual alert query)
-ALERT_STATUS=$(curl -s "http://your-prometheus-instance/api/v1/alerts" | jq '.data.alerts | map(select(.annotations.alertname=="HighCPUUsage")) | length')
+ALERT_STATUS=$(curl -s "http://34.199.42.249:9090/api/v1/alerts" | jq '.data.alerts | map(select(.annotations.alertname=="HighCPUUsage")) | length')
 
 if [ "$ALERT_STATUS" -ge "$ALERT_THRESHOLD" ]; then
     echo "Alert triggered! Scaling up Auto Scaling Group."
