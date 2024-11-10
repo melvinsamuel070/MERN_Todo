@@ -11,6 +11,8 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
+  DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
+  EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
 
 jobs:
   deploy:
@@ -71,17 +73,19 @@ jobs:
             sudo usermod -aG docker $USER
             set +x
           EOF
-        # Explanation: Installs Docker and Docker Compose on the EC2 instance. Debugging enabled with set commands to log errors.
 
-      # Step 4: Install and Configure Nginx on EC2 Instance
-      - name: Install and Configure Nginx on EC2 Instance
+      # Step 4: Install and Configure Nginx on EC2 Instance with SSL (Certbot)
+      - name: Install and Configure Nginx with SSL for melvinsamuel070.xyz
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
             set -x
             trap 'echo "Error occurred at line $LINENO"' ERR
 
-            # Install Nginx
+            # Install Certbot and Nginx plugin
             sudo apt-get update
+            sudo apt-get install -y certbot python3-certbot-nginx
+
+            # Install Nginx
             sudo apt-get install -y nginx
 
             # Ensure the required directories exist
@@ -92,29 +96,8 @@ jobs:
             sudo systemctl enable nginx
             sudo systemctl start nginx
 
-            # Configure Nginx for reverse proxy
-            sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
-            server {
-                listen 80;
-                server_name _;
-
-                location / {
-                    proxy_pass http://localhost:3000;  # Frontend URL
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-
-                location /api/ {
-                    proxy_pass http://localhost:3500;  # Backend URL
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-            }
-            EOL
+            # Obtain SSL certificate with Certbot (replace "your-email@example.com" with your email)
+            sudo certbot --nginx -d melvinsamuel070.xyz -d www.melvinsamuel070.xyz --non-interactive --agree-tos --email your-email@example.com
 
             # Test Nginx configuration and reload
             sudo nginx -t
@@ -122,9 +105,53 @@ jobs:
 
             set +x
           EOF
-        # Explanation: Installs Nginx on the EC2 instance, configures it as a reverse proxy, and reloads the service.
 
-      # Step 5: Start Docker Compose on EC2 with Debugging
+      # Step 5: Configure Nginx Reverse Proxy
+      - name: Configure Nginx Reverse Proxy for Frontend and Backend
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
+
+            # Nginx Configuration
+            echo 'server {
+              listen 80;
+              server_name melvinsamuel070.xyz;
+              return 301 https://$host$request_uri;
+            }
+
+            server {
+              listen 443 ssl;
+              server_name melvinsamuel070.xyz;
+
+              ssl_certificate /etc/letsencrypt/live/melvinsamuel070.xyz/fullchain.pem;
+              ssl_certificate_key /etc/letsencrypt/live/melvinsamuel070.xyz/privkey.pem;
+
+              location / {
+                  proxy_pass http://localhost:3000;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+
+              location /api/ {
+                  proxy_pass http://localhost:3500;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+            }' | sudo tee /etc/nginx/sites-available/default > /dev/null
+
+            # Test Nginx configuration and reload
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+            set +x
+          EOF
+
+      # Step 6: Start Docker Compose on EC2 with Debugging
       - name: Start Docker Compose on EC2 with Debugging
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
@@ -137,9 +164,8 @@ jobs:
 
             set +x
           EOF
-        # Explanation: Deploys the application with Docker Compose. Debugging is enabled to help troubleshoot any issues during deployment.
 
-      # Step 6: Send Email Notification for Deployment Success
+      # Step 7: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
         with:
