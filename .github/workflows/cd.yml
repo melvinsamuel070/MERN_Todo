@@ -41,7 +41,7 @@ jobs:
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
-         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
       # Step 2: Deploy application (example)
       - name: Deploy application
@@ -55,14 +55,14 @@ jobs:
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "deployment"}' \
-         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
      # Step 4: Notify Pushgateway about progress (AWS credentials setup)
       - name: Notify Pushgateway about pipeline progress (step 2)
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
-         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
      # Example of a step in the pipeline, such as configuring AWS credentials
       - name: Configure AWS credentials
@@ -75,7 +75,7 @@ jobs:
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
-         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
      # Example of a final step, like cleaning up or testing
       - name: Final Cleanup
@@ -88,7 +88,7 @@ jobs:
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "final_success"}' \
-         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}      
+         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}      
 
 
            
