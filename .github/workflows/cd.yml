@@ -79,17 +79,17 @@ jobs:
             set +x
           EOF
            
-          # Step 2: Compress the Project Directory
+         # Step 2: Compress the Project Directory
       - name: Compress Project Directory
         run: |
-          cd /home/melvin/
-          tar -czvf MERN_Todo_app.tar.gz MERN_Todo_app/
+         cd ${{ github.workspace }}
+         tar -czvf MERN_Todo_app.tar.gz MERN_Todo_app/
 
-          # Step 3: Copy Project to EC2 Instance
+         # Step 3: Copy Project to EC2 Instance
       - name: Copy Project to EC2
         run: |
-         scp -i /home/melvin/Downloads/main-pro.pem /home/melvin/MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
-
+         scp -i /home/runner/.ssh/id_rsa ${{ github.workspace }}/MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+ 
       - name: Deploy and Start Docker Compose on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/melvin/Downloads/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
