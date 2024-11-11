@@ -79,11 +79,17 @@ jobs:
             set +x
           EOF
            
-         # Step 2: Compress the Project Directory
+      - name: Verify Directory Structure
+        run: ls -la /home/runner/work/MERN_Todo/MERN_Todo
+  
+      - name: Locate Project Directories
+        run: |
+            find /home/runner/work/MERN_Todo/MERN_Todo -type d \( -name "alertmanager" -o -name "backend" -o -name "prometheus" \)
+  
       - name: Compress Project Directory
         run: |
-         cd ${{ github.workspace }}
-         tar -czvf MERN_Todo_app.tar.gz MERN_Todo_app/
+            cd /home/runner/work/MERN_Todo/MERN_Todo
+            tar -czvf MERN_Todo_app.tar.gz MERN_Todo_app/
 
          # Step 3: Copy Project to EC2 Instance
       - name: Copy Project to EC2
