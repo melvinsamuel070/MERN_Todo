@@ -302,7 +302,8 @@ trap 'echo "Error on line $LINENO"; exit 1' ERR
 # Variables
 AWS_REGION="us-east-1"
 VPC_ID="vpc-06349688cec80497a"                       # Replace with your VPC ID
-SUBNET_IDS="subnet-096394880b9a77904,subnet-0afa998e4cb61fc10" # Replace with your Subnet IDs
+SUBNET_1="subnet-096394880b9a77904"
+SUBNET_2="subnet-0afa998e4cb61fc10"  # Two subnets in different AZs
 SECURITY_GROUP_ID="sg-0cf064343aed6695f"              # Replace with your Security Group ID
 EXISTING_INSTANCE_ID="i-02b2eb5ea2457e397"            # Replace with your instance ID
 AMI_ID="ami-0866a3c8686eaeeba"                        # Replace with your AMI ID
@@ -312,11 +313,11 @@ FRONTEND_PORT=3000                                    # Adjust frontend port if 
 BACKEND_PORT=3500                                     # Adjust backend port if different
 ALERT_THRESHOLD=5                                     # Example alert threshold for scaling
 
-# Step 1: Create Launch Template
-echo "Starting creation of Launch Template..."
+LAUNCH_TEMPLATE_NAME="MyAutoScalingTemplateTest-$(date +%Y%m%d%H%M%S)"
+
 LAUNCH_TEMPLATE_ID=$(aws ec2 create-launch-template \
     --region $AWS_REGION \
-    --launch-template-name "MyAutoScalingTemplate" \
+    --launch-template-name "$LAUNCH_TEMPLATE_NAME" \
     --version-description "v1" \
     --launch-template-data "{
         \"ImageId\": \"$AMI_ID\",
@@ -326,12 +327,11 @@ LAUNCH_TEMPLATE_ID=$(aws ec2 create-launch-template \
     }" \
     --query 'LaunchTemplate.LaunchTemplateId' \
     --output text)
+
 echo "Launch Template ID: $LAUNCH_TEMPLATE_ID"
 
-# Step 2: Create Target Group for Frontend
-echo "Creating Target Group for Frontend..."
 FRONTEND_TG_ARN=$(aws elbv2 create-target-group \
-    --region $AWS_REGION \
+    --region us-east-1 \
     --name "FrontendTG" \
     --protocol HTTP \
     --port $FRONTEND_PORT \
@@ -339,58 +339,58 @@ FRONTEND_TG_ARN=$(aws elbv2 create-target-group \
     --target-type instance \
     --health-check-protocol HTTP \
     --health-check-port "$FRONTEND_PORT" \
-    --health-check-path "/" \  # Corrected: "/" is the standard path for health checks
+    --health-check-path "/health" \
     --query 'TargetGroups[0].TargetGroupArn' \
     --output text)
 echo "Frontend Target Group ARN: $FRONTEND_TG_ARN"
 
-# Step 3: Create Target Group for Backend
-echo "Creating Target Group for Backend..."
+
 BACKEND_TG_ARN=$(aws elbv2 create-target-group \
-    --region $AWS_REGION \
+    --region us-east-1 \
     --name "BackendTG" \
     --protocol HTTP \
-    --port $BACKEND_PORT \
-    --vpc-id $VPC_ID \
+    --port 3500 \
+    --vpc-id vpc-06349688cec80497a \
     --target-type instance \
     --health-check-protocol HTTP \
-    --health-check-port "$BACKEND_PORT" \
-    --health-check-path "/health" \  # Adjust if backend has a specific health check endpoint
-    --query 'TargetGroups[0].TargetGroupArn' \
-    --output text)
+    --health-check-port 3500 \
+    --health-check-path "/todo" \
+    --output json | jq -r '.TargetGroups[0].TargetGroupArn')
+
 echo "Backend Target Group ARN: $BACKEND_TG_ARN"
 
-# Step 4: Create Application Load Balancer
+
+# Step 6: Create Application Load Balancer
 echo "Creating Application Load Balancer..."
 ALB_ARN=$(aws elbv2 create-load-balancer \
     --region $AWS_REGION \
     --name "MyApplicationLoadBalancer" \
-    --subnets $SUBNET_IDS \
+    --subnets $SUBNET_1 $SUBNET_2 \
     --security-groups $SECURITY_GROUP_ID \
     --scheme internet-facing \
     --type application \
     --query 'LoadBalancers[0].LoadBalancerArn' \
     --output text)
-echo "Application Load Balancer ARN: $ALB_ARN"
 
-# Step 5: Create Listeners for ALB
-echo "Creating Listener for Frontend on port 80..."
+# Create a listener for Frontend service
 aws elbv2 create-listener \
-    --region $AWS_REGION \
+    --region $REGION \
     --load-balancer-arn $ALB_ARN \
     --protocol HTTP \
     --port 80 \
-    --default-actions Type=forward,TargetGroupArn=$FRONTEND_TG_ARN
-echo "Frontend Listener created."
+    --default-actions Type=fixed-response,FixedResponseConfig="{StatusCode=200}" \
+    --rules '[{"Field":"path-pattern","Values":["/frontend/*"],"Actions":[{"Type":"forward","TargetGroupArn":"'"$FRONTEND_TG_ARN"'"}]}]' \
+    --output text
 
-echo "Creating Listener for Backend on port 81..."
+# Create a listener for Backend service
 aws elbv2 create-listener \
-    --region $AWS_REGION \
+    --region $REGION \
     --load-balancer-arn $ALB_ARN \
     --protocol HTTP \
-    --port 81 \
-    --default-actions Type=forward,TargetGroupArn=$BACKEND_TG_ARN
-echo "Backend Listener created."
+    --port 80 \
+    --default-actions Type=fixed-response,FixedResponseConfig="{StatusCode=200}" \
+    --rules '[{"Field":"path-pattern","Values":["/backend/*"],"Actions":[{"Type":"forward","TargetGroupArn":"'"$BACKEND_TG_ARN"'"}]}]' \
+    --output text
 
 # Step 6: Create Auto Scaling Group
 echo "Creating Auto Scaling Group..."
@@ -404,6 +404,31 @@ aws autoscaling create-auto-scaling-group \
     --vpc-zone-identifier "$SUBNET_IDS" \
     --target-group-arns $FRONTEND_TG_ARN $BACKEND_TG_ARN
 echo "Auto Scaling Group created."
+
+echo "Auto Scaling Group created and linked to target groups."
+
+# 8. (Optional) Set Auto Scaling Policies if needed
+# Example of setting a scale-up policy:
+aws autoscaling put-scaling-policy \
+    --region $REGION \
+    --auto-scaling-group-name "MyAutoScalingGroup" \
+    --policy-name "ScaleUpPolicy" \
+    --adjustment-type ChangeInCapacity \
+    --scaling-adjustment 1 \
+    --cooldown 300
+
+echo "Auto Scaling policy added."
+
+# 9. (Optional) Set Auto Scaling to scale down when low traffic
+aws autoscaling put-scaling-policy \
+    --region $REGION \
+    --auto-scaling-group-name "MyAutoScalingGroup" \
+    --policy-name "ScaleDownPolicy" \
+    --adjustment-type ChangeInCapacity \
+    --scaling-adjustment -1 \
+    --cooldown 300
+
+echo "Scale-down policy added."
 
 # Step 7: Attach Existing Instance to Target Groups
 echo "Attaching Existing Instance $EXISTING_INSTANCE_ID to Target Groups..."

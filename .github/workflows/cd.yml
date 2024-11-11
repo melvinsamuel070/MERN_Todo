@@ -35,7 +35,7 @@ jobs:
         env:
             AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
         
-        
+      
       # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
@@ -78,7 +78,31 @@ jobs:
             sudo usermod -aG docker $USER
             set +x
           EOF
+           
+          # Step 2: Compress the Project Directory
+      - name: Compress Project Directory
+        run: |
+          cd /home/melvin/
+          tar -czvf MERN_Todo_app.tar.gz MERN_Todo_app/
 
+          # Step 3: Copy Project to EC2 Instance
+      - name: Copy Project to EC2
+        run: |
+         scp -i /home/melvin/Downloads/main-pro.pem /home/melvin/MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+
+      - name: Deploy and Start Docker Compose on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/melvin/Downloads/main-pro.pem" ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+          # Extract Project
+          cd /home/ubuntu/
+          tar -xzvf MERN_Todo_app.tar.gz
+
+           # Navigate to Project Directory and Start Docker Compose
+          cd MERN_Todo_app
+          sudo docker-compose up -d
+          EOF
+  
+  
       - name: Deploy and Configure Instance
         run: |
             ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
@@ -121,43 +145,51 @@ jobs:
             set -x
             trap 'echo "Error occurred at line $LINENO"' ERR
 
-            # Nginx Configuration
-            echo 'server {
-              listen 80;
-              server_name melvinsamuel070.xyz;
-              return 301 https://$host$request_uri;
-            }
+            # Step 5: Configure Nginx Reverse Proxy for Frontend and Backend
+      - name: Configure Nginx Reverse Proxy
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+          set -x
+          trap 'echo "Error occurred at line $LINENO"' ERR
 
-            server {
-              listen 443 ssl;
-              server_name melvinsamuel070.xyz;
+           # Nginx Configuration
+             echo 'server {
+          listen 80;
+          server_name melvinsamuel070.xyz;
+          return 301 https://$host$request_uri;
+          }
 
-              ssl_certificate /etc/letsencrypt/live/melvinsamuel070.xyz/fullchain.pem;
-              ssl_certificate_key /etc/letsencrypt/live/melvinsamuel070.xyz/privkey.pem;
+          server {
+            listen 443 ssl;
+             server_name melvinsamuel070.xyz;
 
-              location / {
-                proxy_pass http://localhost:3000;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-              }
+             ssl_certificate /etc/letsencrypt/live/melvinsamuel070.xyz/fullchain.pem;
+             ssl_certificate_key /etc/letsencrypt/live/melvinsamuel070.xyz/privkey.pem;
 
-              location /api/ {
-                proxy_pass http://localhost:3500;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-              }
-            }' | sudo tee /etc/nginx/sites-available/default > /dev/null
+          location / {
+            proxy_pass http://localhost:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+          }
 
-            # Test Nginx configuration and reload
-            sudo nginx -t
-            sudo systemctl reload nginx
+          location /api/ {
+            proxy_pass http://localhost:3500;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+          }
+          }' | sudo tee /etc/nginx/sites-available/default > /dev/null
 
-            set +x
+          # Test Nginx configuration and reload
+          sudo nginx -t
+          sudo systemctl reload nginx
+
+          set +x
           EOF
+
 
       # Step 6: Start Docker Compose on EC2 with Debugging
       - name: Start Docker Compose on EC2 with Debugging
