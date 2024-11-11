@@ -79,17 +79,27 @@ jobs:
             set +x
           EOF
            
-      - name: Verify Directory Structure
-        run: ls -la /home/runner/work/MERN_Todo/MERN_Todo
-  
-      - name: Locate Project Directories
-        run: |
-            find /home/runner/work/MERN_Todo/MERN_Todo -type d \( -name "alertmanager" -o -name "backend" -o -name "prometheus" \)
+          - name: Find Project Directory
+          id: find_directory
+          run: |
+            PROJECT_DIR=$(find /home/runner/work -type d -name "MERN_Todo_app" | head -n 1)
+            if [ -z "$PROJECT_DIR" ]; then
+              echo "Project directory not found."
+              exit 1
+            fi
+            echo "Project directory found: $PROJECT_DIR"
+            echo "project_dir=$PROJECT_DIR" >> $GITHUB_ENV
   
       - name: Compress Project Directory
         run: |
-            cd /home/runner/work/MERN_Todo/MERN_Todo
-            tar -czvf MERN_Todo_app.tar.gz MERN_Todo_app/
+         tar -czvf MERN_Todo_app.tar.gz -C "$PROJECT_DIR" .
+          env:
+            project_dir: ${{ env.project_dir }}
+  
+      - name: Transfer Project Archive to EC2
+        run: |
+            scp -i ~/.ssh/id_rsa MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+        
 
          # Step 3: Copy Project to EC2 Instance
       - name: Copy Project to EC2
