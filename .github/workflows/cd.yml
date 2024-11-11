@@ -79,9 +79,9 @@ jobs:
             set +x
           EOF
            
-          - name: Find Project Directory
-          id: find_directory
-          run: |
+      - name: Find Project Directory
+        id: find_directory
+        run: |
             PROJECT_DIR=$(find /home/runner/work -type d -name "MERN_Todo_app" | head -n 1)
             if [ -z "$PROJECT_DIR" ]; then
               echo "Project directory not found."
