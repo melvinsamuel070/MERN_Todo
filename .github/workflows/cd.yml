@@ -1,3 +1,4 @@
+
 name: CD
 
 on:
@@ -11,13 +12,14 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-  DOMAIN_NAME: melvinsamuel070.xyz
-  EMAIL: melvinsamuel070@gmail.com
+  DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
+  EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -27,85 +29,174 @@ jobs:
 
       - name: Set up SSH Key
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+            mkdir -p ~/.ssh
+            echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+        env:
+            AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
+
+      # Step 1: Notify Pushgateway about pipeline progress
+      - name: Notify Pushgateway about pipeline progress
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
+          http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+      # Send intermediate progress updates
+      - name: Notify Pushgateway about pipeline progress (step 1)
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
+          http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+      
+      # Rest of the deployment steps
+      
+      - name: Notify Pushgateway about pipeline completion
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
+          http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}        
+
+        
+      # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+        env:
+             INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
 
-      - name: Install Docker and Dependencies on EC2
+      - name: Install Docker and Dependencies on EC2 Instance with Debugging
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-            set -e
-            echo "Updating and installing Docker and Docker Compose"
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
+            ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "your_command_here"
+            # Update DNS settings
+            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+            echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+            sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
+            # Install required packages
             sudo apt-get update
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-            sudo apt-get update && sudo apt-get install -y docker-ce docker-compose
-            sudo systemctl enable --now docker
-            sudo usermod -aG docker ubuntu
+            # Docker installation
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+              echo "Docker installation succeeded."
+            else
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            fi
+            # Enable Docker service
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            sudo apt-get install -y docker-compose-plugin
+            sudo usermod -aG docker $USER
+            set +x
           EOF
-
-      - name: Compress Project Directory
-        run: tar -czvf MERN_Todo_app.tar.gz -C ${{ github.workspace }}/MERN_Todo_app .
-
-      - name: Transfer Project Archive to EC2
-        run: scp -i ~/.ssh/id_rsa MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
-
-      - name: Deploy and Start Docker Compose on EC2
+      - name: Deploy and Configure Instance
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-            set -e
-            echo "Extracting and starting Docker Compose"
-            cd /home/ubuntu
-            tar -xzvf MERN_Todo_app.tar.gz
-            cd MERN_Todo_app
-            sudo docker-compose up -d
-          EOF
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              set -x
+              trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+              
+              # Run dpkg configuration
+              sudo dpkg --configure -a
+              
+              # Update package lists and install Nginx
+              sudo apt-get update
+              sudo apt-get install -y nginx
+              
+              # Install Certbot and Nginx plugin
+              sudo apt-get install -y certbot python3-certbot-nginx
+              
+              # Enable and start Nginx service
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+              
+              # Obtain SSL certificate with Certbot
+              sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
+              
+              # Test Nginx configuration
+              sudo nginx -t
+              
+              # Reload Nginx service to apply changes
+              sudo systemctl reload nginx
+            EOF
+        env:
+            INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+            DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+            EMAIL: ${{ secrets.EMAIL }}
+        
 
-      - name: Configure Nginx and Certbot
+      # Step 5: Configure Nginx Reverse Proxy
+      - name: Configure Nginx Reverse Proxy for Frontend and Backend
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-            set -e
-            echo "Installing and configuring Nginx with Certbot"
-            sudo apt-get install -y nginx certbot python3-certbot-nginx
-            sudo systemctl enable --now nginx
-            sudo certbot --nginx -d ${{ env.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ env.EMAIL }}
-
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
             # Nginx Configuration
-            sudo tee /etc/nginx/sites-available/default > /dev/null << NGINX_CONF
-            server {
+            echo 'server {
               listen 80;
-              server_name ${{ env.DOMAIN_NAME }};
-              return 301 https://\$host\$request_uri;
+              server_name melvinsamuel070.xyz;
+              return 301 https://$host$request_uri;
             }
             server {
               listen 443 ssl;
-              server_name ${{ env.DOMAIN_NAME }};
-              ssl_certificate /etc/letsencrypt/live/${{ env.DOMAIN_NAME }}/fullchain.pem;
-              ssl_certificate_key /etc/letsencrypt/live/${{ env.DOMAIN_NAME }}/privkey.pem;
+              server_name melvinsamuel070.xyz;
+              ssl_certificate /etc/letsencrypt/live/melvinsamuel070.xyz/fullchain.pem;
+              ssl_certificate_key /etc/letsencrypt/live/melvinsamuel070.xyz/privkey.pem;
               location / {
                 proxy_pass http://localhost:3000;
-                proxy_set_header Host \$host;
-                proxy_set_header X-Real-IP \$remote_addr;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$scheme;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
               }
               location /api/ {
                 proxy_pass http://localhost:3500;
-                proxy_set_header Host \$host;
-                proxy_set_header X-Real-IP \$remote_addr;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$scheme;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
               }
-            }
-            NGINX_CONF
-            sudo nginx -t && sudo systemctl reload nginx
+            }' | sudo tee /etc/nginx/sites-available/default > /dev/null
+            # Test Nginx configuration and reload
+            sudo nginx -t
+            sudo systemctl reload nginx
+            sudo systemctl start nginx
+            
+            set +x
           EOF
-
+      # Step 6: Start Docker Compose on EC2 with Debugging
+      - name: Start Docker Compose on EC2 with Debugging
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
+            # Resolve any dpkg lock issues before starting Docker installation
+            sudo dpkg --configure -a
+            sudo apt-get install -f -y  # Attempt to fix broken dependencies
+            # Update package lists
+            sudo apt-get update
+            # Check if Docker and Docker Compose are installed, and install if necessary
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found, installing..."
+              sudo apt-get install -y docker.io
+            fi
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Docker Compose not found, installing..."
+              sudo apt-get install -y docker-compose
+            fi
+            # Navigate to project directory and start Docker Compose
+            cd /home/ubuntu/MERN_Todo_app
+            sudo docker-compose up -d
+            set +x
+          EOF
+      # Step 7: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
         with:
