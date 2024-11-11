@@ -50,10 +50,10 @@ jobs:
           EOF
 
       - name: Compress Project Directory
-        run: tar -czvf melvinsamue070/MERN_Todo_app.tar.gz -C ${{ github.workspace }}melvinsamuelson070/MERN_Todo_app .
+        run: tar -czvf MERN_Todo_app.tar.gz -C ${{ github.workspace }}/MERN_Todo_app .
 
       - name: Transfer Project Archive to EC2
-        run: scp -i ~/.ssh/id_rsa melvinsauel070/MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
+        run: scp -i ~/.ssh/id_rsa MERN_Todo_app.tar.gz ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/
 
       - name: Deploy and Start Docker Compose on EC2
         run: |
@@ -61,7 +61,7 @@ jobs:
             set -e
             echo "Extracting and starting Docker Compose"
             cd /home/ubuntu
-            tar -xzvf melvinsamuel070/MERN_Todo_app.tar.gz
+            tar -xzvf MERN_Todo_app.tar.gz
             cd MERN_Todo_app
             sudo docker-compose up -d
           EOF
