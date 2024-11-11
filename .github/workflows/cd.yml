@@ -36,28 +36,62 @@ jobs:
         env:
             AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
-
-      # Step 1: Notify Pushgateway about pipeline progress
+       # Step 1: Notify Pushgateway about pipeline progress (start)
       - name: Notify Pushgateway about pipeline progress
         run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
-          http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-      # Send intermediate progress updates
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
+         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+      # Step 2: Deploy application (example)
+      - name: Deploy application
+        run: |
+         echo "Starting application deployment..."
+         # Add deployment commands here, e.g., docker-compose or kubectl
+         # Example: docker-compose up -d
+
+     # Step 3: Notify Pushgateway about pipeline progress (deployment in progress)
       - name: Notify Pushgateway about pipeline progress (step 1)
         run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
-          http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-      
-      # Rest of the deployment steps
-      
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "deployment"}' \
+         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+     # Step 4: Notify Pushgateway about progress (AWS credentials setup)
+      - name: Notify Pushgateway about pipeline progress (step 2)
+        run: |
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
+         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+     # Example of a step in the pipeline, such as configuring AWS credentials
+      - name: Configure AWS credentials
+        run: |
+         echo "Configuring AWS credentials..."
+         # Add AWS configuration commands here, e.g., AWS CLI setup or environment setup
+
+     # Step 5: Notify Pushgateway about pipeline completion (successful deployment)
       - name: Notify Pushgateway about pipeline completion
         run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
-          http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}        
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
+         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
+     # Example of a final step, like cleaning up or testing
+      - name: Final Cleanup
+        run: |
+         echo "Running final cleanup tasks..."
+         # Your final cleanup commands, e.g., removing temporary files, running tests, etc.
+         
+     # Optional: Notify Pushgateway about pipeline completion with status "success"
+      - name: Final Push to Pushgateway (success)
+        run: |
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "final_success"}' \
+         http://your-pushgateway-instance:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}      
+
+
+           
         
       # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
       - name: Test SSH Connection
