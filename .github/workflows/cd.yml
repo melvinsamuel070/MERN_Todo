@@ -34,82 +34,7 @@ jobs:
             chmod 600 ~/.ssh/id_rsa
             ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
         env:
-            AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-
-      - name: Notify Pushgateway about pipeline progress (start)
-        run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-      # Step 2: Deploy application (example)
-      - name: Deploy application
-        run: |
-         echo "Starting application deployment..."
-         docker-compose up -d
-         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }} 
-         
-         # Step 3: Notify Pushgateway about pipeline progress (deployment in progress)
-      - name: Notify Pushgateway about pipeline progress (step 1)
-        run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "deployment"}' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-     
-         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-
-      - name: Notify Pushgateway about pipeline progress (step 2)
-        run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-   
-          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-# Example of a step in the pipeline, such as configuring AWS credentials
-      - name: Configure AWS credentials
-        run: |
-         echo "Configuring AWS credentials..."
-    # Add AWS configuration commands here, e.g., AWS CLI setup or environment setup
-
-# Step 5: Notify Pushgateway about pipeline completion (successful deployment)
-      - name: Notify Pushgateway about pipeline completion
-        run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
- 
-         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-# Step 6: Notify Pushgateway about failure (if any)
-      - name: Notify Pushgateway about failure (if any)
-        if: failure()  # This runs only if the previous step failed
-        run: |
-         curl -X POST -d 'push_failure_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-      - name: Final Cleanup
-        run: |
-         echo "Running final cleanup tasks..."
-    # Your final cleanup commands, e.g., removing temporary files, running tests, etc.
-
-# Step 8: Optional - Notify Pushgateway about pipeline completion with status "success"
-      - name: Final Push to Pushgateway (success)
-        run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "final_success"}' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-    
-          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-          
+            AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}          
            
         
       # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
@@ -163,15 +88,15 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y nginx
               
-              # Install Certbot and Nginx plugin
-              sudo apt-get install -y certbot python3-certbot-nginx
+              # # Install Certbot and Nginx plugin
+              # sudo apt-get install -y certbot python3-certbot-nginx
               
               # Enable and start Nginx service
               sudo systemctl enable nginx
               sudo systemctl start nginx
               
-              # Obtain SSL certificate with Certbot
-              sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
+              # # Obtain SSL certificate with Certbot
+              # sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
               
               # Test Nginx configuration
               sudo nginx -t
@@ -249,6 +174,81 @@ jobs:
             sudo docker-compose up -d
             set +x
           EOF
+
+      - name: Notify Pushgateway about pipeline progress (start)
+        run: |
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+      # Step 2: Deploy application (example)
+      - name: Deploy application
+        run: |
+         echo "Starting application deployment..."
+         docker-compose up -d
+         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }} 
+         
+         # Step 3: Notify Pushgateway about pipeline progress (deployment in progress)
+      - name: Notify Pushgateway about pipeline progress (step 1)
+        run: |
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "deployment"}' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+     
+         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+
+      - name: Notify Pushgateway about pipeline progress (step 2)
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+   
+          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+# Example of a step in the pipeline, such as configuring AWS credentials
+      - name: Configure AWS credentials
+        run: |
+         echo "Configuring AWS credentials..."
+    # Add AWS configuration commands here, e.g., AWS CLI setup or environment setup
+
+# Step 5: Notify Pushgateway about pipeline completion (successful deployment)
+      - name: Notify Pushgateway about pipeline completion
+        run: |
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+ 
+         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+# Step 6: Notify Pushgateway about failure (if any)
+      - name: Notify Pushgateway about failure (if any)
+        if: failure()  # This runs only if the previous step failed
+        run: |
+         curl -X POST -d 'push_failure_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
+      - name: Final Cleanup
+        run: |
+         echo "Running final cleanup tasks..."
+    # Your final cleanup commands, e.g., removing temporary files, running tests, etc.
+
+# Step 8: Optional - Notify Pushgateway about pipeline completion with status "success"
+      - name: Final Push to Pushgateway (success)
+        run: |
+         curl -X POST -H "Content-Type: application/json" \
+         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "final_success"}' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+    
+          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
       # Step 7: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
