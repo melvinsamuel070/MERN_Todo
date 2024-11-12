@@ -36,61 +36,80 @@ jobs:
         env:
             AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
-       # Step 1: Notify Pushgateway about pipeline progress (start)
-      - name: Notify Pushgateway about pipeline progress
+      - name: Notify Pushgateway about pipeline progress (start)
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
-         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
       # Step 2: Deploy application (example)
       - name: Deploy application
         run: |
          echo "Starting application deployment..."
-         # Add deployment commands here, e.g., docker-compose or kubectl
-         # Example: docker-compose up -d
-
-     # Step 3: Notify Pushgateway about pipeline progress (deployment in progress)
+         docker-compose up -d
+         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }} 
+         
+         # Step 3: Notify Pushgateway about pipeline progress (deployment in progress)
       - name: Notify Pushgateway about pipeline progress (step 1)
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "deployment"}' \
-         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+     
+         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
-     # Step 4: Notify Pushgateway about progress (AWS credentials setup)
+
       - name: Notify Pushgateway about pipeline progress (step 2)
         run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
-         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+   
+          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
-     # Example of a step in the pipeline, such as configuring AWS credentials
+# Example of a step in the pipeline, such as configuring AWS credentials
       - name: Configure AWS credentials
         run: |
          echo "Configuring AWS credentials..."
-         # Add AWS configuration commands here, e.g., AWS CLI setup or environment setup
+    # Add AWS configuration commands here, e.g., AWS CLI setup or environment setup
 
-     # Step 5: Notify Pushgateway about pipeline completion (successful deployment)
+# Step 5: Notify Pushgateway about pipeline completion (successful deployment)
       - name: Notify Pushgateway about pipeline completion
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
-         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+ 
+         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
 
-     # Example of a final step, like cleaning up or testing
+# Step 6: Notify Pushgateway about failure (if any)
+      - name: Notify Pushgateway about failure (if any)
+        if: failure()  # This runs only if the previous step failed
+        run: |
+         curl -X POST -d 'push_failure_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1' \
+         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+
       - name: Final Cleanup
         run: |
          echo "Running final cleanup tasks..."
-         # Your final cleanup commands, e.g., removing temporary files, running tests, etc.
-         
-     # Optional: Notify Pushgateway about pipeline completion with status "success"
+    # Your final cleanup commands, e.g., removing temporary files, running tests, etc.
+
+# Step 8: Optional - Notify Pushgateway about pipeline completion with status "success"
       - name: Final Push to Pushgateway (success)
         run: |
          curl -X POST -H "Content-Type: application/json" \
          -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "final_success"}' \
-         http://34.199.42.249:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}      
-
-
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+    
+          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
+          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+          
            
         
       # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
@@ -184,14 +203,14 @@ jobs:
               ssl_certificate /etc/letsencrypt/live/melvinsamuel070.xyz/fullchain.pem;
               ssl_certificate_key /etc/letsencrypt/live/melvinsamuel070.xyz/privkey.pem;
               location / {
-                proxy_pass http://localhost:3000;
+                proxy_pass http://107.21.180.100:3000;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
               }
               location /api/ {
-                proxy_pass http://localhost:3500;
+                proxy_pass http://107.21.180.100:3500;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

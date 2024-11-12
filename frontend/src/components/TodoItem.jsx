@@ -37,7 +37,7 @@ function TodoItem({ todo, index, moveTodo, setData }) {
 
     const completeTodo = async (id) => {
         try {
-            let response = await axios.put(`http://34.192.51.127:3500/todo/${id}`)
+            let response = await axios.put(`http://localhost:3500/todo/${id}`)
             if(response.data.status){
                 setData(response.data.data)
             }

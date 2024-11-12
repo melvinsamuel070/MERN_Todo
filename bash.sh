@@ -462,3 +462,50 @@ fi
 echo "Auto Scaling and Load Balancer setup complete."
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #!/bin/bash
+
+# # Define variables
+# KEY_PATH="/home/melvin/Downloads/main-pro.pem"
+# USER="ubuntu"
+# INSTANCE_IP="34.199.42.249"  # Replace with your instance's actual IP
+# TARGET_DIR="/home/ubuntu/project"
+# ARCHIVE_NAME="project_files.tar.gz"
+
+# # Create a compressed archive of all files and directories
+# echo "Creating archive $ARCHIVE_NAME..."
+# tar -czf $ARCHIVE_NAME alertmanager backend bash.sh docker-compose.yaml frontend .git .github .gitignore prometheus prometheus.yml
+
+# # Transfer the archive to the remote server
+# echo "Transferring archive to $TARGET_DIR on $INSTANCE_IP"
+# scp -i "$KEY_PATH" $ARCHIVE_NAME "$USER@$INSTANCE_IP:$TARGET_DIR"
+
+# # Connect to the remote server, extract the archive, and clean up
+# echo "Extracting archive on remote server..."
+# ssh -i "$KEY_PATH" "$USER@$INSTANCE_IP" << EOF
+#     mkdir -p $TARGET_DIR
+#     tar -xzf $TARGET_DIR/$ARCHIVE_NAME -C $TARGET_DIR
+#     rm $TARGET_DIR/$ARCHIVE_NAME
+# EOF
+
+# # Remove the local archive
+# rm $ARCHIVE_NAME
+
+# echo "Files have been transferred and extracted on the remote server."
