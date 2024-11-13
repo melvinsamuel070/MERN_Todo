@@ -12,8 +12,8 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-  DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
-  EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
+  # DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
+  # EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
 
 jobs:
   deploy:
@@ -27,20 +27,52 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-     # Set up SSH key
+      # Step 2: Set up SSH Key
       - name: Set up SSH Key
         run: |
-            mkdir -p ~/.ssh
-            echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-            chmod 600 ~/.ssh/id_rsa
-            ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+          echo "ServerAliveInterval 60" >> ~/.ssh/config
+          echo "ServerAliveCountMax 240" >> ~/.ssh/config
 
       # Test SSH Connection
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
 
-      # Install Docker and Dependencies on EC2 Instance
-      - name: Install Docker and Dependencies
+      # Step 3: Install dependencies locally
+      - name: Install dependencies locally
+        run: |
+          npm install
+
+      # Step 4: Compress node_modules and copy to EC2
+      - name: Compress node_modules
+        run: |
+          zip -r node_modules.zip node_modules
+
+      - name: Copy node_modules to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa node_modules.zip ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "unzip /home/ubuntu/MERN_Todo_app/node_modules.zip -d /home/ubuntu/MERN_Todo_app"
+
+      # Step 5: Install Docker and Dependencies on EC2 Instance
+      - name: Install Docker and Dependencies on EC2 Instance
+        timeout-minutes: 30  # Adjust this as needed
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            # Update system
+            sudo apt-get update -y
+            sudo apt-get install -y docker.io docker-compose
+
+            # Start Docker if not already running
+            sudo systemctl enable --now docker
+
+            # Additional setup commands (if any)
+          EOF
+
+      # Step 6: Install Docker and Dependencies (Additional setup)
+      - name: Install Docker and Dependencies (Additional setup)
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
             set -x
@@ -70,7 +102,7 @@ jobs:
             set +x
           EOF
 
-      # Check if directory exists and sync files only if needed
+      # Step 7: Check if directory exists and sync files only if needed
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
@@ -81,7 +113,7 @@ jobs:
               echo "Directory already exists. Checking files..."
             fi
           EOF
-          
+
           # Sync required files to EC2 instance
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
@@ -92,7 +124,7 @@ jobs:
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           wait
 
-      # Deploy using Docker Compose
+      # Step 8: Deploy using Docker Compose
       - name: Deploy and Run Containers
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
@@ -109,9 +141,11 @@ jobs:
             done
           EOF
 
-      # Notify of successful deployment
+      # Step 9: Notify of successful deployment
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
+
+
 
 
       - name: Deploy and Configure Instance
