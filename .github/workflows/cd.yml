@@ -28,23 +28,20 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # Set up SSH Key
+      # Step 2: Set up SSH Key
       - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
-
-      # - name: Set up SSH Key
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-      #     chmod 600 ~/.ssh/id_rsa
-      #     ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
-
+          echo "ServerAliveInterval 60" >> ~/.ssh/config
+          echo "ServerAliveCountMax 240" >> ~/.ssh/config
       # Test SSH Connection
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+      
+      
 
       # Install Docker and Dependencies on EC2 Instance
       - name: Install Docker and Dependencies
