@@ -27,26 +27,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # Step 2: Set up SSH Key
       - name: Set up SSH Key
         run: |
-            mkdir -p ~/.ssh
-            echo "Setting up SSH private key"
-            echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-            chmod 600 ~/.ssh/id_rsa
-            
-            # Ensure that we do not expose the private key in logs
-            # Avoid echoing the private key to stdout
-            
-            # Adding the instance to known hosts
-            ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
-        
-            # Set up SSH config to prevent connection drop
-            echo "ServerAliveInterval 60" >> ~/.ssh/config
-            echo "ServerAliveCountMax 240" >> ~/.ssh/config
-            
-            # Test SSH connection (without exposing sensitive details)
-            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
-        
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          # Debugging: Check if the SSH key exists and is readable
+          ls -l ~/.ssh/id_rsa
+          
+          ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+          echo "ServerAliveInterval 60" >> ~/.ssh/config
+          echo "ServerAliveCountMax 240" >> ~/.ssh/config
+          
+          # Test the SSH connection
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
         
 
       # Test SSH Connection
