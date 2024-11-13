@@ -112,31 +112,34 @@ jobs:
           # Step 5: Deploy the application to the EC2 instance
       - name: Deploy and Run Containers
         env:
-              INSTANCE_IP: ${{ secrets.INSTANCE_IP }}  # The IP address of your EC2 instance
-              EC2_USER: ${{ secrets.EC2_USER }}
-              REQUIRED_CONTAINERS: $REQUIRED_CONTAINERS  # Load required containers from .env
+            INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+            EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
-                # Commands executed on the remote EC2 instance
-
-                set -e  # Exit immediately if a command exits with a non-zero status
-                cd /home/ubuntu/MERN_Todo_app  # Navigate to the application directory on the EC2 instance
-
-                # Step 5a: Start the Docker Compose application, building images as needed
-                sudo docker-compose up -d --build
-
-                # Step 5b: Retrieve the list of required containers
-                RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")  # List running containers
-
-                # Step 5c: Check if all required containers are running
-                for container in $REQUIRED_CONTAINERS; do
-                  if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
-                    echo "Warning: $container is not running."  # Warn if a container isn't running
-                    exit 1  # Exit with error if any required container is missing
-                  fi
-                done
-                echo "All required containers are running."
-              EOF
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
+              set -e
+              
+              # Install Docker Compose if not already installed
+              if ! command -v docker-compose &> /dev/null; then
+                sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+              fi
+              
+              # Navigate to the application directory and run Docker Compose
+              cd /home/ubuntu/MERN_Todo_app
+              sudo docker-compose up -d --build
+        
+              # Verify running containers
+              RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
+              REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
+              for container in $REQUIRED_CONTAINERS; do
+                if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
+                  echo "Warning: $container is not running."
+                  exit 1
+                fi
+              done
+              echo "All required containers are running."
+            EOF
+        
       # Step 5: Notify of successful deployment
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
