@@ -126,7 +126,7 @@ jobs:
               
               # Navigate to the application directory and run Docker Compose
               cd /home/ubuntu/MERN_Todo_app
-              sudo docker-compose up -d --build
+              sudo docker compose up -d --build
         
               # Verify running containers
               RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
