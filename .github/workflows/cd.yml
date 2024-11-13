@@ -18,7 +18,7 @@ jobs:
 
       # Configure AWS Credentials
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -105,23 +105,76 @@ jobs:
           scp -o StrictHostKeyChecking=no -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
           wait
       # Step 4: Deploy using Docker Compose
-      - name: Deploy and Run Containers
+      name: Deploy to AWS
+
+# Trigger deployment on push to the main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Use the latest Ubuntu image for the workflow runner
+
+    steps:
+      # Step 1: Check out the code from your repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+        # The `checkout` action pulls your code so it’s available for the deployment steps
+
+      # Step 2: Configure AWS credentials for the GitHub Actions environment
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Access Key ID from GitHub Secrets
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Secret Access Key from GitHub Secrets
+          aws-region: ${{ secrets.AWS_REGION }}  # AWS Region (e.g., us-east-1)
+
+      # Step 3: Set up the SSH key for accessing the EC2 instance
+      - name: Set up SSH Key
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$INSTANCE_IP << 'EOF'
-            set -e
-            cd /home/ubuntu/MERN_Todo_app
-            # Run Docker Compose and ensure all services are up
+          mkdir -p ~/.ssh  # Create the .ssh directory if it doesn't exist
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Save the private SSH key to a file
+          chmod 600 ~/.ssh/id_rsa  # Restrict permissions to the SSH key file
+
+      # Step 4: Load environment variables from the .env file in your repository
+      - name: Load environment variables from .env file
+        id: load_env
+        run: |
+          # Export all variables from .env so they can be accessed in later steps
+          set -a
+          source .env  # Load .env file into the environment
+          set +a  # Stop exporting all variables
+
+      # Step 5: Deploy the application to the EC2 instance
+      - name: Deploy application
+        env:
+          INSTANCE_IP: ${{ secrets.INSTANCE_IP }}  # The IP address of your EC2 instance
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            # Commands executed on the remote EC2 instance
+
+            set -e  # Exit immediately if a command exits with a non-zero status
+            cd /home/ubuntu/MERN_Todo_app  # Navigate to the application directory on the EC2 instance
+
+            # Step 5a: Start the Docker Compose application, building images as needed
             sudo docker-compose up -d --build
-            # Verify that all containers are running
-            RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
-            REQUIRED_CONTAINERS="mongo backend frontend mongo-exporter prometheus pushgateway node-exporter alertmanager grafana"
+
+            # Step 5b: Retrieve the list of required containers from the .env file
+            REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
+            
+            # Step 5c: Check if all required containers are running
+            RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")  # List running containers
             for container in $REQUIRED_CONTAINERS; do
               if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
-                echo "Warning: $container is not running."
-                exit 1
+                echo "Warning: $container is not running."  # Warn if a container isn't running
+                exit 1  # Exit with error if any required container is missing
               fi
             done
+            echo "All required containers are running."
           EOF
+
       # Step 5: Notify of successful deployment
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
