@@ -104,7 +104,6 @@ jobs:
               fi
             done
           EOF
-
           
       # Notify of successful deployment
       - name: Notify Success
