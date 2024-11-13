@@ -35,9 +35,6 @@ jobs:
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Check if the SSH key exists and has the correct permissions
-          ls -l ~/.ssh/id_rsa
-          
           # Add the private key to the SSH agent
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
@@ -51,10 +48,14 @@ jobs:
 
           # Debugging: Test SSH connection with verbose output
           ssh -vvv -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
-      # Test SSH Connection
-      - name: Test SSH Connection
-        run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
 
+          # Check the exit status of the SSH command
+          if [ $? -ne 0 ]; then
+            echo "SSH connection failed"
+            exit 1
+          else
+            echo "SSH connection successful"
+          fi
       # Health Check: EC2 Instance Health
       - name: Check EC2 Instance Health
         run: |
