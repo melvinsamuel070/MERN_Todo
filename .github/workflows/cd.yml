@@ -41,11 +41,16 @@ jobs:
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
 
-      # Step 3: Install dependencies locally
-      - name: Install dependencies locally
+      # Step 3: Install dependencies on EC2
+      - name: Install dependencies on EC2
         run: |
-          cd /home/ubuntu/MERN_Todo_app/backend  # Ensure you are in the correct directory
-          npm install
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            # Go to the backend directory
+            cd /home/ubuntu/MERN_Todo_app/backend
+
+            # Install npm dependencies
+            npm install
+          EOF
 
       # Step 4: Compress node_modules and copy to EC2
       - name: Compress node_modules
