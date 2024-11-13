@@ -1,6 +1,3 @@
-
-
-
 name: CD
 
 on:
@@ -29,15 +26,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Step 2: Set up SSH Key
+      # Set up SSH key
       - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
-          echo "ServerAliveInterval 60" >> ~/.ssh/config
-          echo "ServerAliveCountMax 240" >> ~/.ssh/config
+
       # Test SSH Connection
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
@@ -72,6 +68,7 @@ jobs:
             sudo usermod -aG docker $USER
             set +x
           EOF
+
       # Check if directory exists and sync files only if needed
       - name: Deploy to EC2
         run: |
@@ -83,7 +80,7 @@ jobs:
               echo "Directory already exists. Checking files..."
             fi
           EOF
-          
+
           # Sync required files to EC2 instance
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
@@ -93,22 +90,32 @@ jobs:
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           wait
+
       # Deploy using Docker Compose
       - name: Deploy and Run Containers
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             set -e
             cd /home/ubuntu/MERN_Todo_app
+
+            # Build and run Docker Compose services
             sudo docker-compose up -d --build
+
+            # Check if all required containers are running
             RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
             REQUIRED_CONTAINERS="mongo backend frontend mongo-exporter prometheus pushgateway node-exporter alertmanager grafana"
+            
             for container in $REQUIRED_CONTAINERS; do
               if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
                 echo "Warning: $container is not running."
                 exit 1
               fi
             done
+
+            echo "All required containers are running."
           EOF
+
+
       # Notify of successful deployment
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
