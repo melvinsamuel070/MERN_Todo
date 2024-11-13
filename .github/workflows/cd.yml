@@ -11,8 +11,8 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-  DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
-  EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
+  DOMAIN_NAME: melvinsamuel070.xyz
+  EMAIL: melvinsamuel070@gmail.com
 
 jobs:
   deploy:
@@ -115,7 +115,7 @@ jobs:
             echo "All required containers are running."
           EOF
 
-
+          
       # Notify of successful deployment
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
