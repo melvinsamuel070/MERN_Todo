@@ -76,7 +76,10 @@ jobs:
           EOF
 
         # Step 3: Check if directory exists and copy files only if needed
-      - name: Prepare Deployment Directory and Sync Files
+      - name: Deploy to EC2
+        env:
+          EC2_USER: "ubuntu"
+          INSTANCE_IP: "${{ secrets.INSTANCE_IP }}"
         run: |
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$INSTANCE_IP << 'EOF'
             # Check if the project directory exists; if not, create it
@@ -87,17 +90,16 @@ jobs:
               echo "Directory already exists. Checking files..."
             fi
           EOF
-
-          # Sync required files to EC2 instance if they are missing or need updates
-          scp -i key.pem -r alertmanager $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -i key.pem -r backend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -i key.pem bash.sh $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -i key.pem docker-compose.yaml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -i key.pem -r frontend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -i key.pem -r prometheus $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          
+          # Sync required files to EC2 instance
+          scp -o StrictHostKeyChecking=no -i key.pem -r alertmanager $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem -r backend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem bash.sh $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem docker-compose.yaml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem -r frontend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem -r prometheus $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
           wait
-
       # Step 4: Deploy using Docker Compose
       - name: Deploy and Run Containers
         run: |
