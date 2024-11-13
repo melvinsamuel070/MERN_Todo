@@ -1,4 +1,5 @@
 
+
 name: CD
 
 on:
@@ -19,7 +20,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-       # Step 1: Configure AWS Credentials
+      # Step 1: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -27,70 +28,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Step 2: Set up SSH Key
+     # Set up SSH key
       - name: Set up SSH Key
         run: |
-          # Create SSH directory and add private key
-          mkdir -p ~/.ssh
-          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+            mkdir -p ~/.ssh
+            echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+      # Test SSH Connection
+      - name: Test SSH Connection
+        run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
 
-          # Add the private key to the SSH agent
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
-
-          # Add the instance's IP to known_hosts to prevent SSH from prompting for confirmation
-          ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
-
-          # Configure SSH client for keep-alive
-          echo "ServerAliveInterval 60" >> ~/.ssh/config
-          echo "ServerAliveCountMax 240" >> ~/.ssh/config
-
-          # Debugging: Test SSH connection with verbose output
-          ssh -vvv -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
-
-          # Check the exit status of the SSH command
-          if [ $? -ne 0 ]; then
-            echo "SSH connection failed"
-            exit 1
-          else
-            echo "SSH connection successful"
-          fi
-
-          
-      # Health Check: EC2 Instance Health
-      - name: Check EC2 Instance Health
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
-            # Check if the instance is healthy
-            if ! systemctl is-active --quiet sshd; then
-              echo "SSHD is not running, attempting to restart."
-              sudo systemctl start sshd
-            else
-              echo "SSHD is active."
-            fi
-
-            # Check disk space
-            DISK_SPACE=$(df -h / | tail -1 | awk '{print $5}' | sed 's/%//')
-            if [ "$DISK_SPACE" -gt 90 ]; then
-              echo "Warning: Disk space is above 90%. Trying to free space."
-              sudo apt-get clean
-              sudo rm -rf /var/cache/apt/archives/*
-              sudo rm -rf /tmp/*
-            else
-              echo "Disk space is sufficient: ${DISK_SPACE}%."
-            fi
-
-            # Check if Docker is running
-            if ! systemctl is-active --quiet docker; then
-              echo "Docker is not running, attempting to start."
-              sudo systemctl start docker
-            else
-              echo "Docker is running."
-            fi
-          EOF
-
-      # Step 3: Install Docker and Dependencies on EC2 Instance
+      # Install Docker and Dependencies on EC2 Instance
       - name: Install Docker and Dependencies
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
@@ -120,8 +69,7 @@ jobs:
             sudo usermod -aG docker $USER
             set +x
           EOF
-
-      # Step 4: Sync Files to EC2
+      # Check if directory exists and sync files only if needed
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
@@ -142,8 +90,7 @@ jobs:
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           wait
-
-      # Step 5: Deploy and Run Containers
+      # Deploy using Docker Compose
       - name: Deploy and Run Containers
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
@@ -159,8 +106,7 @@ jobs:
               fi
             done
           EOF
-
-      # Step 6: Notify of successful deployment
+      # Notify of successful deployment
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
 
