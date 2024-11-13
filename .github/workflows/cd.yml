@@ -30,21 +30,27 @@ jobs:
       # Step 2: Set up SSH Key
       - name: Set up SSH Key
         run: |
+          # Create SSH directory and add private key
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          
-          # Debugging: Check if the SSH key exists and is readable
+
+          # Check if the SSH key exists and has the correct permissions
           ls -l ~/.ssh/id_rsa
           
+          # Add the private key to the SSH agent
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+          # Add the instance's IP to known_hosts to prevent SSH from prompting for confirmation
           ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+
+          # Configure SSH client for keep-alive
           echo "ServerAliveInterval 60" >> ~/.ssh/config
           echo "ServerAliveCountMax 240" >> ~/.ssh/config
-          
-          # Test the SSH connection
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
-        
 
+          # Debugging: Test SSH connection with verbose output
+          ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
       # Test SSH Connection
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
