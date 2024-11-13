@@ -12,8 +12,8 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-  # DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
-  # EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
+  DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
+  EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
 
 jobs:
   deploy:
@@ -44,6 +44,7 @@ jobs:
       # Step 3: Install dependencies locally
       - name: Install dependencies locally
         run: |
+          cd /home/ubuntu/MERN_Todo_app/backend  # Ensure you are in the correct directory
           npm install
 
       # Step 4: Compress node_modules and copy to EC2
@@ -141,7 +142,7 @@ jobs:
             done
           EOF
 
-      # Step 9: Notify of successful deployment
+      # Step 9: Notify Success
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
 
