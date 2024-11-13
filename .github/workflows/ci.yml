@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - master
-      
+
 env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
@@ -18,11 +18,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
         id: checkout
-      
+
       - name: Print Debug Info - Branch and Commit
         run: |
           echo "Branch: ${{ github.ref }}"
           echo "Commit: ${{ github.sha }}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
@@ -40,51 +41,80 @@ jobs:
           path: |
             ./backend/build.log
             ./frontend/build.log
+
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Push Backend Image to Docker Hub
         run: docker push ${{ env.BACKEND_IMAGE }}
 
+      # Add microservices setup
+      - name: Start MongoDB Service
+        run: |
+          docker run -d --name mongo -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=password -v mongo_data:/data/db mongo
+
+      - name: Start Backend Service
+        run: |
+          docker run -d --name backend -e NODE_ENV=production -e DB_URL=mongodb://root:password@mongo:27017/ --network host ${{ env.BACKEND_IMAGE }}
+
+      - name: Start Frontend Service
+        run: |
+          docker run -d --name frontend --network host ${{ env.FRONTEND_IMAGE }}
+
+      - name: Start Prometheus
+        run: |
+          docker run -d --name prometheus -p 9090:9090 -v ./prometheus/:/etc/prometheus/ prom/prometheus:v2.45.3
+
       - name: Start Alertmanager
         run: |
-          docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
-      - name: Wait for Alertmanager to be ready
+          docker run -d --name alertmanager -p 9092:9093 -v /home/melvin/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml prom/alertmanager:v0.27.0
+
+      - name: Start Pushgateway
         run: |
-          for i in {1..10}; do 
-            if curl -s -f http://localhost:9092; then 
-              echo "Alertmanager is up and running!"; 
-              break; 
-            fi; 
-            echo "Waiting for Alertmanager to be ready..."; 
-            sleep 6; 
-          done
+          docker run -d --name pushgateway -p 9091:9091 prom/pushgateway
+
+      - name: Start Node Exporter
+        run: |
+          docker run -d --name node-exporter -p 9100:9100 prom/node-exporter:v1.7.0
+
+      - name: Start MongoDB Exporter
+        run: |
+          docker run -d --name mongo-exporter -e MONGODB_URI=mongodb://root:password@mongo:27017/admin bitnami/mongodb-exporter
+
+      - name: Start Grafana
+        run: |
+          docker run -d --name grafana -p 3001:3000 -v grafana-data:/var/lib/grafana grafana/grafana
+
+      - name: Wait for Services to be Ready
+        run: |
+          sleep 20  # Give services time to initialize
+
+      # Trigger Alertmanager notification for successful build
       - name: Notify Alertmanager of Build Success
         run: |
-            response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
-              {
-                "labels": {
-                  "alertname": "BuildSuccess",
-                  "severity": "info",
-                  "team": "development",
-                  "environment": "production"
-                },
-                "annotations": {
-                  "summary": "Build Successful",
-                  "description": "The latest build was successful."
-                }
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+            {
+              "labels": {
+                "alertname": "BuildSuccess",
+                "severity": "info",
+                "team": "development",
+                "environment": "production"
+              },
+              "annotations": {
+                "summary": "Build Successful",
+                "description": "The latest build was successful."
               }
-            ]' http://localhost:9092/api/v2/alerts)
-        
-            echo "Response Code: $response"
-        
-            if [ "$response" -ne 200 ]; then
-              echo "Failed to notify Alertmanager: HTTP Status $response"
-              exit 1
-            else
-              echo "Successfully notified Alertmanager of build success."
-            fi
-        
+            }
+          ]' http://localhost:9092/api/v2/alerts)
+          echo "Response Code: $response"
+          if [ "$response" -ne 200 ]; then
+            echo "Failed to notify Alertmanager: HTTP Status $response"
+            exit 1
+          else
+            echo "Successfully notified Alertmanager of build success."
+          fi
+
+      # Send Email Notification for Build Success
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
         with:
