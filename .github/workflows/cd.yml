@@ -11,14 +11,15 @@ env:
   BACKEND_IMAGE: melvinsamuel070/backend:latest
   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-  DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
-  EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
+  DOMAIN_NAME: melvinsamuel070.xyz
+  EMAIL: melvinsamuel070@gmail.com
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      # Step 1: Configure AWS Credentials
+      # Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -26,13 +27,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-     # Set up SSH key
+      # Set up SSH Key
       - name: Set up SSH Key
         run: |
-            mkdir -p ~/.ssh
-            echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-            chmod 600 ~/.ssh/id_rsa
-            ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+
       # Test SSH Connection
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
@@ -40,7 +42,7 @@ jobs:
       # Install Docker and Dependencies on EC2 Instance
       - name: Install Docker and Dependencies
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             set -x
             trap 'echo "Error occurred at line $LINENO"' ERR
             # Update DNS settings
@@ -67,7 +69,8 @@ jobs:
             sudo usermod -aG docker $USER
             set +x
           EOF
-      # Check if directory exists and sync files only if needed
+
+      # Check if directory exists and sync files if needed
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
@@ -78,7 +81,7 @@ jobs:
               echo "Directory already exists. Checking files..."
             fi
           EOF
-          
+
           # Sync required files to EC2 instance
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
@@ -88,22 +91,31 @@ jobs:
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           wait
+
       # Deploy using Docker Compose
       - name: Deploy and Run Containers
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             set -e
             cd /home/ubuntu/MERN_Todo_app
+
+            # Build and run Docker Compose services
             sudo docker-compose up -d --build
+
+            # Check if all required containers are running
             RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
             REQUIRED_CONTAINERS="mongo backend frontend mongo-exporter prometheus pushgateway node-exporter alertmanager grafana"
+            
             for container in $REQUIRED_CONTAINERS; do
               if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
                 echo "Warning: $container is not running."
                 exit 1
               fi
             done
+
+            echo "All required containers are running."
           EOF
+
           
       # Notify of successful deployment
       - name: Notify Success
