@@ -27,28 +27,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+     # Set up SSH key
       - name: Set up SSH Key
         run: |
             mkdir -p ~/.ssh
             echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
             ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
-        env:
-            AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}          
-           
-        
-      # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
+
+      # Test SSH Connection
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
-        env:
-             INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
 
-      - name: Install Docker and Dependencies on EC2 Instance with Debugging
+      # Install Docker and Dependencies on EC2 Instance
+      - name: Install Docker and Dependencies
         run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
             set -x
             trap 'echo "Error occurred at line $LINENO"' ERR
-            ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "your_command_here"
             # Update DNS settings
             echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
             echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
@@ -70,19 +66,14 @@ jobs:
             fi
             sudo systemctl enable docker
             sudo systemctl start docker
-            sudo apt-get install -y docker-compose-plugin
             sudo usermod -aG docker $USER
             set +x
           EOF
 
-        # Step 3: Check if directory exists and copy files only if needed
+      # Check if directory exists and sync files only if needed
       - name: Deploy to EC2
-        env:
-          EC2_USER: "ubuntu"
-          INSTANCE_IP: "${{ secrets.INSTANCE_IP }}"
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$INSTANCE_IP << 'EOF'
-            # Check if the project directory exists; if not, create it
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             if [ ! -d "/home/ubuntu/MERN_Todo_app" ]; then
               echo "Directory does not exist. Creating..."
               mkdir -p /home/ubuntu/MERN_Todo_app
@@ -92,28 +83,24 @@ jobs:
           EOF
           
           # Sync required files to EC2 instance
-          scp -o StrictHostKeyChecking=no -i key.pem -r alertmanager $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -o StrictHostKeyChecking=no -i key.pem -r backend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -o StrictHostKeyChecking=no -i key.pem bash.sh $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -o StrictHostKeyChecking=no -i key.pem docker-compose.yaml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -o StrictHostKeyChecking=no -i key.pem -r frontend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -o StrictHostKeyChecking=no -i key.pem -r prometheus $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -o StrictHostKeyChecking=no -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml ubuntu@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo_app/ &
           wait
-      # Step 4: Deploy using Docker Compose
+
+      # Deploy using Docker Compose
       - name: Deploy and Run Containers
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$INSTANCE_IP << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
             set -e
             cd /home/ubuntu/MERN_Todo_app
-
-            # Run Docker Compose and ensure all services are up
             sudo docker-compose up -d --build
-
-            # Verify that all containers are running
             RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
             REQUIRED_CONTAINERS="mongo backend frontend mongo-exporter prometheus pushgateway node-exporter alertmanager grafana"
-
             for container in $REQUIRED_CONTAINERS; do
               if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
                 echo "Warning: $container is not running."
@@ -122,7 +109,7 @@ jobs:
             done
           EOF
 
-      # Step 5: Notify of successful deployment
+      # Notify of successful deployment
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
 
