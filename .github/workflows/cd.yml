@@ -1,40 +1,43 @@
 
-name: CD
+name: Deploy to AWS
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
-
-env:
-  AWS_REGION: us-east-1
-  BACKEND_IMAGE: melvinsamuel070/backend:latest
-  FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-  DOMAIN_NAME: melvinsamuel070.xyz  # Add your domain name here
-  EMAIL: melvinsamuel070@gmail.com  # Add your email for Certbot registration
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      # Step 1: Configure AWS Credentials
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
+      # Ensure AWS Configuration is set
+      - name: Ensure AWS Configuration
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ secrets.AWS_REGION }}
+
+      # Set up SSH Key
       - name: Set up SSH Key
         run: |
-            mkdir -p ~/.ssh
-            echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-            chmod 600 ~/.ssh/id_rsa
-            ssh-keyscan -H "${{ secrets.INSTANCE_IP }}" >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
         env:
-            AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}          
+          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}         
            
         
       # Step 3: Install Docker and Dependencies on EC2 Instance with Debugging
@@ -158,6 +161,7 @@ jobs:
       # Step 5: Configure Nginx Reverse Proxy
       - name: Configure Nginx Reverse Proxy for Frontend and Backend
         run: |
+         #!/bin/bash
          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
          set -x
          trap 'echo "Error occurred at line $LINENO"' ERR
