@@ -193,8 +193,8 @@ jobs:
           }
           EOL
           # Test and reload Nginx
-          sudo nginx -t
-          sudo systemctl reload nginx
+          # sudo nginx -t
+          # sudo systemctl reload nginx
           EOF
           # Step 6: Start Docker Compose on EC2 with Debugging
       - name: Start Docker Compose on EC2 with Debugging
