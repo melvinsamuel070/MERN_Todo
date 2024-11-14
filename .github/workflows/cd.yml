@@ -148,66 +148,71 @@ jobs:
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
 
-      # Step 9: Deploy and Configure 
-
+      
+      # Step 9: Deploy and Configure Instance
       - name: Deploy and Configure Instance
         run: |
-         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-         set -x
-         trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
-         # Run dpkg configuration
-         sudo dpkg --configure -a
-         # Update package lists and install Nginx
-         sudo apt-get update
-         sudo apt-get install -y nginx
-         # # Install Certbot and Nginx plugin
-         # sudo apt-get install -y certbot python3-certbot-nginx
-         # Enable and start Nginx service
-         sudo systemctl enable nginx
-         sudo systemctl start nginx
-         # # Obtain SSL certificate with Certbot
-         # sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
-         # Test Nginx configuration
-         sudo nginx -t
-         # Reload Nginx service to apply changes
-         sudo systemctl reload nginx
-         EOF
-
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              set -x
+              trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+              
+              # Run dpkg configuration
+              sudo dpkg --configure -a
+              
+              # Update package lists and install Nginx
+              sudo apt-get update
+              sudo apt-get install -y nginx
+              
+              # # Install Certbot and Nginx plugin
+              # sudo apt-get install -y certbot python3-certbot-nginx
+              
+              # Enable and start Nginx service
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+              
+              # # Obtain SSL certificate with Certbot
+              # sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
+              
+              # Test Nginx configuration
+              #  sudo nginx -t
+              
+              # Reload Nginx service to apply changes
+              sudo systemctl reload nginx
+            EOF
         env:
-          INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
-          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-          EMAIL: ${{ secrets.EMAIL }}
+            INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+            DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+            EMAIL: ${{ secrets.EMAIL }}
 
-        # Step 10: Configure Nginx Reverse Proxy
+      # Step 10: Configure Nginx Reverse Proxy
       - name: Configure Nginx Reverse Proxy
         run: |
-         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-         sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
-         server {
-          listen 80;
-          server_name ${{ secrets.DOMAIN_NAME }};
-          
-          location / {
-            proxy_pass http://localhost:3000;  # Adjust to your frontend port
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-          }
-          
-          location /api/ {
-            proxy_pass http://localhost:3500;  # Adjust to your backend port
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-          }
-         }
-         EOL
-         # Test and reload Nginx
-         sudo nginx -t
-         sudo systemctl reload nginx
-         EOF
-
-           # Step 6: Start Docker Compose on EC2 with Debugging
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+              server {
+                listen 80;
+                server_name ${{ secrets.DOMAIN_NAME }};
+                
+                location / {
+                  proxy_pass http://localhost:3000;  # Adjust to your frontend port
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                }
+                
+                location /api/ {
+                  proxy_pass http://localhost:3500;  # Adjust to your backend port
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                }
+              }
+              EOL
+              # Test and reload Nginx
+              sudo nginx -t
+              sudo systemctl reload nginx
+            EOF
+            # Step 6: Start Docker Compose on EC2 with Debugging
       - name: Start Docker Compose on EC2 with Debugging
         run: |
           ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
@@ -229,7 +234,7 @@ jobs:
             fi
             # Navigate to project directory and start Docker Compose
             cd /home/ubuntu/MERN_Todo_app
-            sudo docker compose up -d
+            sudo docker-compose up -d
             set +x
           EOF
          
