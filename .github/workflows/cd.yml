@@ -162,15 +162,15 @@ jobs:
           # Test Nginx configuration
           sudo nginx -t
           # Reload Nginx service to apply changes
-          sudo systemctl reload nginx
+          # sudo systemctl reload nginx
           EOF
           env:
           INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
           # DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
           EMAIL: ${{ secrets.EMAIL }}
           # Step 10: Configure Nginx Reverse Proxy
-          - name: Configure Nginx Reverse Proxy
-          run: |
+      - name: Configure Nginx Reverse Proxy
+        run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
           sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
           server {
@@ -197,8 +197,8 @@ jobs:
           sudo systemctl reload nginx
           EOF
           # Step 6: Start Docker Compose on EC2 with Debugging
-          - name: Start Docker Compose on EC2 with Debugging
-          run: |
+      - name: Start Docker Compose on EC2 with Debugging
+        run: |
           ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
           set -x
           trap 'echo "Error occurred at line $LINENO"' ERR
