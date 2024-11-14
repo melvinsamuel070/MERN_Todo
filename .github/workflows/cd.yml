@@ -1,4 +1,6 @@
 
+
+
 name: CD
 
 on:
@@ -14,8 +16,8 @@ jobs:
     steps:
       # Checkout the code
       - name: Checkout code
-        uses: actions/checkout@v2
-        
+        uses: actions/checkout@v4
+
       # Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -30,7 +32,6 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region ${{ secrets.AWS_REGION }}
-
       # Set up SSH Key
       - name: Set up SSH Key
         run: |
@@ -105,53 +106,38 @@ jobs:
           scp -o StrictHostKeyChecking=no -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
           wait
             # Step 4: Load environment variables from the .env file in your repository
-              # Step 1: Checkout code
-     
-              
-
-          # Step 3: Install dependencies with increased memory limit
-      - run: node --max-old-space-size=4096 $(which npm) ci  # Increase memory to 4GB for npm ci
-
-          # Step 4: Run tests
-      - run: npm test  # Run tests
-
-          # Step 5: Load environment variables from the .env file in your repository
       - name: Load environment variables from .env file
         run: |
-          export $(grep -v '^#' .env | xargs)  # Load variables from .env file and export them
-
-          # Step 6: Deploy and Run Containers
-          - name: Deploy and Run Containers
-          env:
-          INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
-          set -e
-
-          # Install Docker Compose if not already installed
-          if ! command -v docker-compose &> /dev/null; then
-          sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          fi
-
-          # Navigate to the application directory and run Docker Compose with increased memory
-          cd /home/ubuntu/MERN_Todo_app
-          export NODE_OPTIONS=--max-old-space-size=4096  # Increase memory for Node.js processes
-          sudo -E docker compose up -d --build  # Use -E to retain exported environment variables
-
-          # Verify running containers
-          RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
-          REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
-          for container in $REQUIRED_CONTAINERS; do
-          if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
-          echo "Warning: $container is not running."
-          exit 1
-          fi
-          done
-          echo "All required containers are running."
-          EOF
-
+              export $(grep -v '^#' .env | xargs)  # Load variables from .env file and export them
+      - name: Deploy and Run Containers
+        env:
+                  INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+                  EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+                  ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
+                    set -e
+                    
+                    # Install Docker Compose if not already installed
+                    if ! command -v docker-compose &> /dev/null; then
+                      sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
+                      sudo chmod +x /usr/local/bin/docker-compose
+                    fi
+                    
+                    # Navigate to the application directory and run Docker Compose with increased memory
+                    cd /home/ubuntu/MERN_Todo_app
+                    NODE_OPTIONS=--max-old-space-size=4096 sudo docker compose up -d --build
+              
+                    # Verify running containers
+                    RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
+                    REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
+                    for container in $REQUIRED_CONTAINERS; do
+                      if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
+                        echo "Warning: $container is not running."
+                        exit 1
+                      fi
+                    done
+                    echo "All required containers are running."
+                  EOF
             
         
       # Step 5: Notify of successful deployment
