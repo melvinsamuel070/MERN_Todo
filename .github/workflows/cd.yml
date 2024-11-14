@@ -288,7 +288,7 @@ jobs:
        
       # Step 7: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
-        uses: dawidd6/action-send-mail@v4
+        uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 587
