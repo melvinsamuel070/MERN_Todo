@@ -239,76 +239,53 @@ jobs:
 
       - name: Notify Pushgateway about pipeline progress (start)
         run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "started", "job": "cd-pipeline", "pipeline_stage": "start"}' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-      # Step 2: Deploy application (example)
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"start\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
       - name: Deploy application
         run: |
-         echo "Starting application deployment..."
-         docker compose up -d
-         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }} 
-         
-         # Step 3: Notify Pushgateway about pipeline progress (deployment in progress)
-      - name: Notify Pushgateway about pipeline progress (step 1)
+           echo "Starting application deployment..."
+           docker compose up -d
+           echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Notify Pushgateway about pipeline progress (deployment in progress)
         run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "deployment"}' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-     
-         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-
-      - name: Notify Pushgateway about pipeline progress (step 2)
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Notify Pushgateway about pipeline progress (configure AWS credentials)
         run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"status": "in-progress", "job": "cd-pipeline", "pipeline_stage": "configure_aws_credentials"}' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-   
-          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-# Example of a step in the pipeline, such as configuring AWS credentials
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"configure_aws_credentials\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
       - name: Configure AWS credentials
         run: |
-         echo "Configuring AWS credentials..."
-    # Add AWS configuration commands here, e.g., AWS CLI setup or environment setup
-
-# Step 5: Notify Pushgateway about pipeline completion (successful deployment)
+           echo "Configuring AWS credentials..."
+           # Add AWS configuration commands here
+       
       - name: Notify Pushgateway about pipeline completion
         run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "deployment_complete"}' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
- 
-         curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
-# Step 6: Notify Pushgateway about failure (if any)
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment_complete\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
       - name: Notify Pushgateway about failure (if any)
-        if: failure()  # This runs only if the previous step failed
+        if: failure()
         run: |
-         curl -X POST -d 'push_failure_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1' \
-         http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+           echo -e "push_failure_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
       - name: Final Cleanup
         run: |
-         echo "Running final cleanup tasks..."
-    # Your final cleanup commands, e.g., removing temporary files, running tests, etc.
-
-# Step 8: Optional - Notify Pushgateway about pipeline completion with status "success"
+           echo "Running final cleanup tasks..."
+       
       - name: Final Push to Pushgateway (success)
         run: |
-         curl -X POST -H "Content-Type: application/json" \
-         -d '{"status": "completed", "job": "cd-pipeline", "pipeline_stage": "final_success"}' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-    
-          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
-          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
-
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"final_success\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+           echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
       # Step 7: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v4
