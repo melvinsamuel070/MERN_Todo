@@ -1,5 +1,8 @@
 
 
+
+
+
 name: CI
 
 on:
@@ -17,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         id: checkout
       
       - name: Print Debug Info - Branch and Commit
@@ -42,7 +45,7 @@ jobs:
             ./backend/build.log
             ./frontend/build.log
       - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Push Backend Image to Docker Hub
         run: docker push ${{ env.BACKEND_IMAGE }}

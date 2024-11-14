@@ -4,7 +4,8 @@ WORKDIR /home/app
 
 COPY package.json .
 
-RUN npm install
+# Increase memory limit for npm install
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm install
 
 COPY . .
 
@@ -26,3 +27,4 @@ COPY package.json .
 RUN npm install -g serve
 
 CMD ["serve", "-s", "build"]
+
