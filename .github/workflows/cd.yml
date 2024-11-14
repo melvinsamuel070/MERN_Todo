@@ -52,13 +52,17 @@ jobs:
             set -x
             trap 'echo "Error occurred at line $LINENO"' ERR
             ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "your_command_here"
-            # Update DNS settings
+
+           # Update DNS settings
             echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
             echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
             sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
+
             # Install required packages
             sudo apt-get update
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+            
             # Docker installation
             sudo install -m 0755 -d /etc/apt/keyrings
             sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -245,7 +249,7 @@ jobs:
       - name: Deploy application
         run: |
          echo "Starting application deployment..."
-         docker-compose up -d
+         docker compose up -d
          curl -X POST -d 'push_time_seconds{instance="${{ github.run_id }}",job="cd-pipeline"} 1.7314249522950275e+09' \
          http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }} 
          
