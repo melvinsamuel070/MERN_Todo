@@ -105,9 +105,9 @@ jobs:
           scp -o StrictHostKeyChecking=no -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
           wait
       # Step 6: Load environment variables from the .env file in your repository
-      - name: Load environment variables from .env file
+      - name: Load environment variables from .env 
         run: |
-              export $(grep -v '^#' .env | xargs)  # Load variables from .env file and export them
+              export $(grep -v '^#' .env | xargs)  # Load variables from .env  and export them
       # Step 7: Deploy and Run Containers
       - name: Deploy and Run Containers
         env:
@@ -175,7 +175,7 @@ jobs:
           sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
           server {
             listen 80;
-            # server_name ${{ secrets.DOMAIN_NAME }};  # Commented out due to potential errors
+          # server_name ${{ secrets.DOMAIN_NAME }};  # Commented out due to potential errors
             
             location / {
               proxy_pass http://localhost:3000;  # Adjust to your frontend port
@@ -196,6 +196,8 @@ jobs:
           # sudo nginx -t
           # sudo systemctl reload nginx
           EOF
+
+
           # Step 6: Start Docker Compose on EC2 with Debugging
       - name: Start Docker Compose on EC2 with Debugging
         run: |
