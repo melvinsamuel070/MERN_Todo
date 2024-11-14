@@ -79,7 +79,6 @@ jobs:
             sudo usermod -aG docker $USER
             set +x
           EOF
-          sudo npm install -y 
         # Step 3: Check if directory exists and copy files only if needed
       - name: Deploy to EC2
         env:
@@ -110,37 +109,36 @@ jobs:
         run: |
               export $(grep -v '^#' .env | xargs)  # Load variables from .env file and export them
 
+          # Step 5: Deploy the application to the EC2 instance
       - name: Deploy and Run Containers
         env:
-                  INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
-                  EC2_USER: ${{ secrets.EC2_USER }}
+            INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+            EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-                  ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
-                    set -e
-                    
-                    # Install Docker Compose if not already installed
-                    if ! command -v docker-compose &> /dev/null; then
-                      sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
-                      sudo chmod +x /usr/local/bin/docker-compose
-                    fi
-                    
-                    # Navigate to the application directory and run Docker Compose
-                    cd /home/ubuntu/MERN_Todo_app
-                    export NODE_OPTIONS=--max-old-space-size=4096
-                    sudo docker compose up -d --build
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
+              set -e
               
-                    # Verify running containers
-                    RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
-                    REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
-                    for container in $REQUIRED_CONTAINERS; do
-                      if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
-                        echo "Warning: $container is not running."
-                        exit 1
-                      fi
-                    done
-                    echo "All required containers are running."
-                  EOF
-            
+              # Install Docker Compose if not already installed
+              if ! command -v docker-compose &> /dev/null; then
+                sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+              fi
+              
+              # Navigate to the application directory and run Docker Compose
+              cd /home/ubuntu/MERN_Todo_app
+              sudo docker compose up -d --build
+        
+              # Verify running containers
+              RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
+              REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
+              for container in $REQUIRED_CONTAINERS; do
+                if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
+                  echo "Warning: $container is not running."
+                  exit 1
+                fi
+              done
+              echo "All required containers are running."
+            EOF
         
       # Step 5: Notify of successful deployment
       - name: Notify Success
