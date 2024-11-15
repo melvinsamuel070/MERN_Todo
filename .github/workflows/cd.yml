@@ -172,32 +172,34 @@ jobs:
 
       - name: Configure Nginx Reverse Proxy
         run: |
-              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
-              server {
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            # Ensure DOMAIN_NAME is correctly set
+            echo "Using domain: ${{ secrets.DOMAIN_NAME }}"
+            sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+            server {
               listen 80;
-              server_name ${{ secrets.DOMAIN_NAME }};
-
+              server_name ${{ secrets.DOMAIN_NAME }};  # Make sure the domain is passed correctly
+              
               location / {
                 proxy_pass http://localhost:3000;  # Adjust to your frontend port
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
               }
-
+              
               location /api/ {
                 proxy_pass http://localhost:3500;  # Adjust to your backend port
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
               }
-              }
-              EOL
-              # Test and reload Nginx
-              sudo nginx -t
-              sudo systemctl reload nginx
-              EOF
-
+            }
+            EOL
+            # Test and reload Nginx
+            sudo nginx -t
+            sudo systemctl reload nginx
+            EOF
+        
       - name: Start Docker Compose on EC2 with Debugging
         run: |
               ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
