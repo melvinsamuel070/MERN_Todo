@@ -172,10 +172,6 @@ jobs:
               # Reload Nginx service to apply changes
               sudo systemctl reload nginx
               EOF
-        env:
-              INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
-              DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-              EMAIL: ${{ secrets.EMAIL }}
           
       - name: Configure Nginx Reverse Proxy
         run: |
@@ -220,47 +216,44 @@ jobs:
             trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
         
             # Resolve dpkg lock issues
-            if sudo lsof /var/lib/apt/lists/lock; then
-                echo "APT lock is held. Killing process..."
-                sudo kill $(sudo lsof -t /var/lib/apt/lists/lock) || true
-                sudo rm -f /var/lib/apt/lists/lock
-            fi
-        
-            if sudo lsof /var/lib/dpkg/lock; then
-                echo "DPKG lock is held. Killing process..."
-                sudo kill $(sudo lsof -t /var/lib/dpkg/lock) || true
-                sudo rm -f /var/lib/dpkg/lock
-            fi
-        
-            if sudo lsof /var/lib/dpkg/lock-frontend; then
-                echo "DPKG frontend lock is held. Killing process..."
-                sudo kill $(sudo lsof -t /var/lib/dpkg/lock-frontend) || true
-                sudo rm -f /var/lib/dpkg/lock-frontend
-            fi
+            for lock in /var/lib/apt/lists/lock /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend; do
+                if sudo lsof $lock &> /dev/null; then
+                    echo "Lock $lock is held. Killing process..."
+                    sudo kill $(sudo lsof -t $lock) || true
+                    sudo rm -f $lock
+                fi
+            done
         
             # Reconfigure dpkg and update apt cache
             sudo dpkg --configure -a || true
             sudo apt-get install -f -y || true
-            sudo apt-get update
+            sudo apt-get update -y
         
-            # Install Docker and Docker Compose if not installed
+            # Ensure the system is upgraded to avoid dependency issues
+            sudo apt-get upgrade -y || true
+        
+            # Install Docker if not installed
             if ! command -v docker &> /dev/null; then
                 echo "Docker not found, installing..."
                 sudo apt-get install -y docker.io
+            else
+                echo "Docker is already installed."
             fi
         
+            # Install Docker Compose if not installed
             if ! command -v docker-compose &> /dev/null; then
                 echo "Docker Compose not found, installing..."
                 sudo apt-get install -y docker-compose
+            else
+                echo "Docker Compose is already installed."
             fi
         
-            # Start Docker Compose
+            # Navigate to project directory and start Docker Compose
             cd /home/ubuntu/MERN_Todo_app
-            sudo docker compose up -d
+            sudo docker compose up -d || { echo "Failed to start Docker Compose"; exit 1; }
         
             set +x
             EOF
-        
             
           
       - name: Notify Pushgateway about pipeline progress (start)
