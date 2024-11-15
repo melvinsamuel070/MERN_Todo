@@ -22,7 +22,6 @@ jobs:
         run: |
          sudo apt update
          sudo apt install -y awscli
-
       # Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -179,22 +178,18 @@ jobs:
           DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
           FRONTEND_PORT="${{ secrets.FRONTEND_PORT }}"
           BACKEND_PORT="${{ secrets.BACKEND_PORT }}"
-
           echo "Configuring Nginx for domain: $DOMAIN_NAME"
-
           # Write Nginx configuration
           sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
           server {
               listen 80;
               server_name $DOMAIN_NAME;
-
               location / {
                   proxy_pass http://${{ secrets.INSTANCE_IP }}:$FRONTEND_PORT;
                   proxy_set_header Host \$host;
                   proxy_set_header X-Real-IP \$remote_addr;
                   proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
               }
-
               location /api/ {
                   proxy_pass http://${{ secrets.INSTANCE_IP }}:$BACKEND_PORT;
                   proxy_set_header Host \$host;
@@ -203,12 +198,10 @@ jobs:
               }
           }
           EOL
-
           # Test and reload Nginx
           sudo nginx -t
           sudo systemctl reload nginx
           EOF
-
       - name: Start Docker Compose on EC2 with Debugging
         run: |
             ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
@@ -317,9 +310,6 @@ jobs:
           body: "The deployment of your application completed successfully."
           to: kingsamuel412@gmail.com
           from: ${{ secrets.EMAIL_USERNAME }}
-
-
-
 
 
 
