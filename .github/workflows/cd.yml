@@ -145,89 +145,89 @@ jobs:
             # Step 9: Deploy and Configure Instanc
       - name: Deploy and Configure Instance
         run: |
-            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-            set -x
-            trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
-            # Run dpkg configuration
-            sudo dpkg --configure -a
-            # Update package lists and install Nginx
-            sudo apt-get update
-            sudo apt-get install -y nginx
-            # Install Certbot and Nginx plugin for SSL certificate management
-            sudo apt-get install -y certbot python3-certbot-nginx
-            # Enable and start Nginx service
-            sudo systemctl enable nginx
-            sudo systemctl start nginx
-            # Obtain SSL certificate with Certbot
-            sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
-            # Test Nginx configuration
-            sudo nginx -t
-            # Reload Nginx service to apply changes
-            sudo systemctl reload nginx
-            EOF
+              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              set -x
+              trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+              # Run dpkg configuration
+              sudo dpkg --configure -a
+              # Update package lists and install Nginx
+              sudo apt-get update
+              sudo apt-get install -y nginx
+              # Install Certbot and Nginx plugin for SSL certificate management
+              sudo apt-get install -y certbot python3-certbot-nginx
+              # Enable and start Nginx service
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+              # Obtain SSL certificate with Certbot
+              sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
+              # Test Nginx configuration
+              sudo nginx -t
+              # Reload Nginx service to apply changes
+              sudo systemctl reload nginx
+              EOF
         env:
-            INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
-            DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-            EMAIL: ${{ secrets.EMAIL }}
-
+              INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+              DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+              EMAIL: ${{ secrets.EMAIL }}
+          
       - name: Configure Nginx Reverse Proxy
         run: |
-            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-            # Ensure DOMAIN_NAME is correctly set
-            echo "Using domain: ${{ secrets.DOMAIN_NAME }}"
-
-            # Configure Nginx with reverse proxy settings
-            sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
-            server {
-            listen 80;
-            server_name ${{ secrets.DOMAIN_NAME }};  # Make sure the domain is passed correctly
-
-            location / {
-            proxy_pass http://localhost:3000;  # Adjust to your frontend port
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            }
-
-            location /api/ {
-            proxy_pass http://localhost:3500;  # Adjust to your backend port
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            }
-            }
-            EOL
-
-            # Test and reload Nginx
-            sudo nginx -t
-            sudo systemctl reload nginx
-            EOF
-
+              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              # Ensure DOMAIN_NAME is correctly set
+              echo "Using domain: ${{ secrets.DOMAIN_NAME }}"
+          
+              # Configure Nginx with reverse proxy settings
+              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+              server {
+                  listen 80;
+                  server_name ${{ secrets.DOMAIN_NAME }};  # Your domain name
+          
+                  location / {
+                      proxy_pass http://${{ secrets.INSTANCE_IP }}:${{ secrets.FRONTEND_PORT }};  # Using the instance IP and frontend port from secrets
+                      proxy_set_header Host \$host;
+                      proxy_set_header X-Real-IP \$remote_addr;
+                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  }
+          
+                  location /api/ {
+                      proxy_pass http://${{ secrets.INSTANCE_IP }}:${{ secrets.BACKEND_PORT }};  # Using the instance IP and backend port from secrets
+                      proxy_set_header Host \$host;
+                      proxy_set_header X-Real-IP \$remote_addr;
+                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  }
+              }
+              EOL
+          
+              # Test and reload Nginx
+              sudo nginx -t
+              sudo systemctl reload nginx
+              EOF
+          
       - name: Start Docker Compose on EC2 with Debugging
         run: |
-            ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-            set -x
-            trap 'echo "Error occurred at line $LINENO"' ERR
-            # Resolve any dpkg lock issues before starting Docker installation
-            sudo dpkg --configure -a
-            sudo apt-get install -f -y  # Attempt to fix broken dependencies
-            # Update package lists
-            sudo apt-get update
-            # Check if Docker and Docker Compose are installed, and install if necessary
-            if ! command -v docker &> /dev/null; then
-            echo "Docker not found, installing..."
-            sudo apt-get install -y docker.io
-            fi
-            if ! command -v docker-compose &> /dev/null; then
-            echo "Docker Compose not found, installing..."
-            sudo apt-get install -y docker-compose
-            fi
-            # Navigate to project directory and start Docker Compose
-            cd /home/ubuntu/MERN_Todo_app
-            sudo docker compose up -d
-            set +x
-            EOF
-
+              ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              set -x
+              trap 'echo "Error occurred at line $LINENO"' ERR
+              # Resolve any dpkg lock issues before starting Docker installation
+              sudo dpkg --configure -a
+              sudo apt-get install -f -y  # Attempt to fix broken dependencies
+              # Update package lists
+              sudo apt-get update
+              # Check if Docker and Docker Compose are installed, and install if necessary
+              if ! command -v docker &> /dev/null; then
+              echo "Docker not found, installing..."
+              sudo apt-get install -y docker.io
+              fi
+              if ! command -v docker-compose &> /dev/null; then
+              echo "Docker Compose not found, installing..."
+              sudo apt-get install -y docker-compose
+              fi
+              # Navigate to project directory and start Docker Compose
+              cd /home/ubuntu/MERN_Todo_app
+              sudo docker compose up -d
+              set +x
+              EOF
+          
       - name: Notify Pushgateway about pipeline progress (start)
         run: |
            echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"start\"} 1\n" | \
