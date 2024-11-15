@@ -179,73 +179,81 @@ jobs:
           
       - name: Configure Nginx Reverse Proxy
         run: |
-              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-              # Ensure DOMAIN_NAME is correctly set
-              echo "Using domain: ${{ secrets.DOMAIN_NAME }}"
-          
-              # Configure Nginx with reverse proxy settings
-              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
-              server {
-                  listen 80;
-                  server_name ${{ secrets.DOMAIN_NAME }};  # Your domain name
-          
-                  location / {
-                      proxy_pass http://${{ secrets.INSTANCE_IP }}:${{ secrets.FRONTEND_PORT }};  # Using the instance IP and frontend port from secrets
-                      proxy_set_header Host \$host;
-                      proxy_set_header X-Real-IP \$remote_addr;
-                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                  }
-          
-                  location /api/ {
-                      proxy_pass http://${{ secrets.INSTANCE_IP }}:${{ secrets.BACKEND_PORT }};  # Using the instance IP and backend port from secrets
-                      proxy_set_header Host \$host;
-                      proxy_set_header X-Real-IP \$remote_addr;
-                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                  }
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+          DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
+          FRONTEND_PORT="${{ secrets.FRONTEND_PORT }}"
+          BACKEND_PORT="${{ secrets.BACKEND_PORT }}"
+
+          echo "Configuring Nginx for domain: $DOMAIN_NAME"
+
+          # Write Nginx configuration
+          sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+          server {
+              listen 80;
+              server_name $DOMAIN_NAME;
+
+              location / {
+                  proxy_pass http://${{ secrets.INSTANCE_IP }}:$FRONTEND_PORT;
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
               }
-              EOL
-          
-              # Test and reload Nginx
-              sudo nginx -t
-              sudo systemctl reload nginx
-              EOF
-          
-      # Step 3: Start Docker Compose on EC2 with Debugging (Your provided script)
+
+              location /api/ {
+                  proxy_pass http://${{ secrets.INSTANCE_IP }}:$BACKEND_PORT;
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              }
+          }
+          EOL
+
+          # Test and reload Nginx
+          sudo nginx -t
+          sudo systemctl reload nginx
+          EOF
+
       - name: Start Docker Compose on EC2 with Debugging
         run: |
-              ssh -o StrictHostKeyChecking=no -i "/tmp/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-              set -x
-              trap 'echo "Error occurred at line $LINENO"' ERR
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+          set -x
+          trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
 
-              # Resolve any dpkg lock issues before starting Docker installation
-              sudo dpkg --configure -a
-              sudo apt-get install -f -y  # Attempt to fix broken dependencies
+          # Resolve dpkg lock issues
+          sudo dpkg --configure -a || true
 
-              # Update package lists
-              sudo apt-get update
+          # Kill processes holding apt locks
+          sudo kill $(sudo lsof /var/lib/apt/lists/lock | awk '{print $2}') || true
+          sudo kill $(sudo lsof /var/lib/dpkg/lock | awk '{print $2}') || true
+          sudo kill $(sudo lsof /var/lib/dpkg/lock-frontend | awk '{print $2}') || true
 
-              # Check if Docker is installed, and install if necessary
-              if ! command -v docker &> /dev/null; then
-                echo "Docker not found, installing..."
-                sudo apt-get install -y docker.io
-              else
-                echo "Docker is already installed, skipping installation."
-              fi
+          # Remove lock files
+          sudo rm -f /var/lib/apt/lists/lock
+          sudo rm -f /var/lib/dpkg/lock
+          sudo rm -f /var/lib/dpkg/lock-frontend
 
-              # Check if Docker Compose is installed, and install if necessary
-              if ! command -v docker-compose &> /dev/null; then
-                echo "Docker Compose not found, installing..."
-                sudo apt-get install -y docker-compose
-              else
-                echo "Docker Compose is already installed, skipping installation."
-              fi
+          # Update and install required packages
+          sudo dpkg --configure -a || true
+          sudo apt-get install -f -y || true
+          sudo apt-get update
 
-              # Navigate to project directory and start Docker Compose
-              cd /home/ubuntu/MERN_Todo_app
-              sudo docker-compose up -d
+          if ! command -v docker &> /dev/null; then
+            echo "Docker not found, installing..."
+            sudo apt-get install -y docker.io
+          fi
 
-              set +x
-              EOF
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Docker Compose not found, installing..."
+            sudo apt-get install -y docker-compose
+          fi
+
+          # Start Docker Compose
+          cd /home/ubuntu/MERN_Todo_app
+          sudo docker compose up -d
+
+          set +x
+          EOF
+            
           
       - name: Notify Pushgateway about pipeline progress (start)
         run: |
