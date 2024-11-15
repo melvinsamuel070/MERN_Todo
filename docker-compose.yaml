@@ -1,118 +1,291 @@
-services:
-  mongo:
-    image: mongo  # Use the official MongoDB image
-    restart: always
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME  # Root username for MongoDB
-      - MONGO_INITDB_ROOT_PASSWORD  # Root password for MongoDB
-    volumes:
-      - mongo_data:/data/db  # Persist MongoDB data
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure MongoDB is on the same network
 
-  backend:
-    image: melvinsamuel070/backend:latest  # Replace with your actual backend image name
-    build:
-      context: ./backend  # Path to your backend Dockerfile
-      dockerfile: Dockerfile
-    ports:
-      - "3500:3500"  # Map the backend port to the host
-    volumes:
-      - backend_data:/app/data  # Optional for backend data persistence
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
-    environment:
-      - NODE_ENV=production
-      - DB_URL=mongodb://root:password@mongo:27017/  # Update to use local MongoDB connection
-    depends_on:
-      - mongo  # Ensure MongoDB starts before the backend
+name: CD
 
-  frontend:
-    image: melvinsamuel070/frontend1:latest  # Replace with your actual frontend image name
-    build:
-      context: ./frontend  # Path to your frontend Dockerfile
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"  # Map the frontend port to the host
-    depends_on:
-      - backend  # Ensure the backend starts before the frontend
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+on:
+  workflow_run:
+    workflows: [CI]
+    types:
+      - completed
 
-  mongo-exporter:
-    image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
-    environment:
-      - MONGODB_URI=mongodb://root:password@mongo:27017/admin  # Connection string for MongoDB
-    depends_on:
-      - mongo
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-  prometheus:
-    image: prom/prometheus:v2.45.3
-    restart: unless-stopped
-    volumes:
-      - ./prometheus/:/etc/prometheus/
-    command:
-      - --web.enable-remote-write-receiver
-      - --config.file=/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  pushgateway:
-    image: prom/pushgateway:latest  # Pushgateway image
-    ports:
-      - '9091:9091'  # Expose Pushgateway's port
-    restart: always
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network 
+      # Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  node-exporter:
-    image: prom/node-exporter:v1.7.0
-    restart: unless-stopped
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    ports:
-      - "9100:9100"
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Node Exporter is on the same network
+      # Ensure AWS Configuration is set
+      - name: Ensure AWS Configurations
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ secrets.AWS_REGION }}
+      # Set up SSH Key
+      - name: Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+        env:
+          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
 
-  alertmanager:
-    image: prom/alertmanager:v0.27.0
-    restart: unless-stopped
-    ports:
-      - "9092:9093"  # Map port 9093 for Alertmanager access
-    volumes:
-      - /home/melvin/MERN_Todo_app/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      # Step 3: Test SSH Connection
+      - name: Test SSH Connection
+        run: |
+         ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+         ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+        env:
+             INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
 
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3001:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-    restart: unless-stopped
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Grafana is on the same network
-
-networks:
-  mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
-    driver: bridge
-
-volumes:
-  backend_data:
-  mongo_data:  # Add a volume for MongoDB
-  grafana-data:  # Add a volume for Grafana
+      # Step 4: Install Docker and Dependencies on EC2 Instance with Debugging
+      - name: Install Docker and Dependencies on EC2 Instance with Debugging
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            set -x
+            trap 'echo "Error occurred at line $LINENO"' ERR
+            ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "your_command_here"
+            # Update DNS settings
+            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+            echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+            sudo sed -i "1s/^/127.0.0.1 $(hostname)\n/" /etc/hosts
+            # Install required packages
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+            sudo apt-get install npm
+            # Docker installation
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            if sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+              echo "Docker installation succeeded."
+            else
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sudo sh get-docker.sh
+            fi
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            sudo apt-get install -y docker-compose-plugin
+            sudo usermod -aG docker $USER
+            set +x
+          EOF
+      # Step 5: Check if directory exists and copy files only if needed
+      - name: Deploy to EC2
+        env:
+          EC2_USER: "ubuntu"
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} << 'EOF'
+            # Ensure project directory exists
+            PROJECT_DIR="/home/ubuntu/MERN_Todo_app"
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Creating project directory..."
+              mkdir -p "$PROJECT_DIR"
+            else
+              echo "Project directory already exists."
+            fi
+          EOF
+          
+          # Sync required files to EC2 instance
+          scp -o StrictHostKeyChecking=no -i key.pem -r alertmanager $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem -r backend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem bash.sh $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem docker-compose.yaml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem -r frontend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem -r prometheus $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          scp -o StrictHostKeyChecking=no -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
+          wait
+      # Step 6: Load environment variables from the .env file in your repository
+      - name: Load environment variables from .env 
+        run: |
+              export $(grep -v '^#' .env | xargs)  # Load variables from .env  and export them
+      # Step 7: Deploy and Run Containers
+      - name: Deploy and Run Containers
+        env:
+                  INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+                  EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+                  ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
+                    set -e
+                    
+                    # Install Docker Compose if not already installed
+                    if ! command -v docker-compose &> /dev/null; then
+                      sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
+                      sudo chmod +x /usr/local/bin/docker-compose
+                    fi
+                    
+                    # Navigate to the application directory and run Docker Compose with increased memory
+                    cd /home/ubuntu/MERN_Todo_app
+                    NODE_OPTIONS=--max-old-space-size=4096 sudo docker compose up -d 
+              
+                    # Verify running containers
+                    RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
+                    REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
+                    for container in $REQUIRED_CONTAINERS; do
+                      if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
+                        echo "Warning: $container is not running."
+                        exit 1
+                      fi
+                    done
+                    echo "All required containers are running."
+                  EOF
+      # Step 8: Notify Success
+      - name: Notify Success
+        run: echo "Deployment completed successfully, and all containers are running."
+            # Step 9: Deploy and Configure Instanc
+      - name: Deploy and Configure Instance
+        run: |
+              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              set -x
+              trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+              # Run dpkg configuration
+              sudo dpkg --configure -a
+              # Update package lists and install Nginx
+              sudo apt-get update
+              sudo apt-get install -y nginx
+              # Install Certbot and Nginx plugin for SSL certificate management
+              sudo apt-get install -y certbot python3-certbot-nginx
+              # Enable and start Nginx service
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+              # Obtain SSL certificate with Certbot
+              sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
+              # Test Nginx configuration
+              sudo nginx -t
+              # Reload Nginx service to apply changes
+              sudo systemctl reload nginx
+              EOF
+        env:
+              INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+              DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+              EMAIL: ${{ secrets.EMAIL }}
+          
+      - name: Configure Nginx Reverse Proxy
+        run: |
+              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              # Ensure DOMAIN_NAME is correctly set
+              echo "Using domain: ${{ secrets.DOMAIN_NAME }}"
+          
+              # Configure Nginx with reverse proxy settings
+              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+              server {
+                  listen 80;
+                  server_name ${{ secrets.DOMAIN_NAME }};  # Your domain name
+          
+                  location / {
+                      proxy_pass http://${{ secrets.INSTANCE_IP }}:${{ secrets.FRONTEND_PORT }};  # Using the instance IP and frontend port from secrets
+                      proxy_set_header Host \$host;
+                      proxy_set_header X-Real-IP \$remote_addr;
+                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  }
+          
+                  location /api/ {
+                      proxy_pass http://${{ secrets.INSTANCE_IP }}:${{ secrets.BACKEND_PORT }};  # Using the instance IP and backend port from secrets
+                      proxy_set_header Host \$host;
+                      proxy_set_header X-Real-IP \$remote_addr;
+                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  }
+              }
+              EOL
+          
+              # Test and reload Nginx
+              sudo nginx -t
+              sudo systemctl reload nginx
+              EOF
+          
+      - name: Start Docker Compose on EC2 with Debugging
+        run: |
+              ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              set -x
+              trap 'echo "Error occurred at line $LINENO"' ERR
+              # Resolve any dpkg lock issues before starting Docker installation
+              sudo dpkg --configure -a
+              sudo apt-get install -f -y  # Attempt to fix broken dependencies
+              # Update package lists
+              sudo apt-get update
+              # Check if Docker and Docker Compose are installed, and install if necessary
+              if ! command -v docker &> /dev/null; then
+              echo "Docker not found, installing..."
+              sudo apt-get install -y docker.io
+              fi
+              if ! command -v docker-compose &> /dev/null; then
+              echo "Docker Compose not found, installing..."
+              sudo apt-get install -y docker-compose
+              fi
+              # Navigate to project directory and start Docker Compose
+              cd /home/ubuntu/MERN_Todo_app
+              sudo docker compose up -d
+              set +x
+              EOF
+          
+      - name: Notify Pushgateway about pipeline progress (start)
+        run: |
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"start\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Deploy application
+        run: |
+           echo "Starting application deployment..."
+           docker compose up -d
+           echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Notify Pushgateway about pipeline progress (deployment in progress)
+        run: |
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Notify Pushgateway about pipeline progress (configure AWS credentials)
+        run: |
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"configure_aws_credentials\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Configure AWS credentials
+        run: |
+           echo "Configuring AWS credentials..."
+           # Add AWS configuration commands here
+       
+      - name: Notify Pushgateway about pipeline completion
+        run: |
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment_complete\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Notify Pushgateway about failure (if any)
+        if: failure()
+        run: |
+           echo -e "push_failure_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      - name: Final Cleanup
+        run: |
+           echo "Running final cleanup tasks..."
+       
+      - name: Final Push to Pushgateway (success)
+        run: |
+           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"final_success\"} 1\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+           echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
+           curl -X POST --data-binary @- http://107.21.180.100:9091/metrics/job/cd-pipeline/instance/${{ github.run_id }}
+       
+      # Step 7: Send Email Notification for Deployment Success
+      - name: Send Email Notification for Deployment Success
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Deployment Success: CD Pipeline"
+          body: "The deployment of your application completed successfully."
+          to: kingsamuel412@gmail.com
+          from: ${{ secrets.EMAIL_USERNAME }}
