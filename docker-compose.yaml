@@ -16,7 +16,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Configure AWS Credentials
+     # Install AWS CLI (optional: if AWS CLI isn't already available in the runner)
+      - name: Install AWS CLI
+        run: |
+          sudo apt update
+          sudo apt install -y awscli
+
+      # Configure AWS Credentials using GitHub secrets
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -24,7 +30,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Ensure AWS Configuration is set
+      # Ensure AWS Configurations are set
       - name: Ensure AWS Configurations
         run: |
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -203,28 +209,40 @@ jobs:
               sudo systemctl reload nginx
               EOF
           
+      # Step 3: Start Docker Compose on EC2 with Debugging (Your provided script)
       - name: Start Docker Compose on EC2 with Debugging
         run: |
-              ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              ssh -o StrictHostKeyChecking=no -i "/tmp/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
               set -x
               trap 'echo "Error occurred at line $LINENO"' ERR
+
               # Resolve any dpkg lock issues before starting Docker installation
               sudo dpkg --configure -a
               sudo apt-get install -f -y  # Attempt to fix broken dependencies
+
               # Update package lists
               sudo apt-get update
-              # Check if Docker and Docker Compose are installed, and install if necessary
+
+              # Check if Docker is installed, and install if necessary
               if ! command -v docker &> /dev/null; then
-              echo "Docker not found, installing..."
-              sudo apt-get install -y docker.io
+                echo "Docker not found, installing..."
+                sudo apt-get install -y docker.io
+              else
+                echo "Docker is already installed, skipping installation."
               fi
+
+              # Check if Docker Compose is installed, and install if necessary
               if ! command -v docker-compose &> /dev/null; then
-              echo "Docker Compose not found, installing..."
-              sudo apt-get install -y docker-compose
+                echo "Docker Compose not found, installing..."
+                sudo apt-get install -y docker-compose
+              else
+                echo "Docker Compose is already installed, skipping installation."
               fi
+
               # Navigate to project directory and start Docker Compose
               cd /home/ubuntu/MERN_Todo_app
               sudo docker compose up -d
+
               set +x
               EOF
           
