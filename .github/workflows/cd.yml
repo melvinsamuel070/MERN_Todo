@@ -85,20 +85,30 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
 
-            # Step 10: Install project dependencies
-      - name: Install dependencies
+         # Step 10: Install frontend dependencies
+      - name: Install frontend dependencies
         run: npm install
-        working-directory: ./MERN_Todo  # Ensure the correct directory is set
+        working-directory: ./frontend  # Point to the frontend directory
 
-      # Step 11: Build the project
-      - name: Build the project
+            # Step 11: Build the frontend project
+      - name: Build the frontend project
         run: npm run build
-        working-directory: ./MERN_Todo  # Ensure the correct directory is set
+        working-directory: ./frontend  # Point to the frontend directory
 
-      # Step 12: Run tests
-      - name: Run tests
+            # Step 12: Run frontend tests
+      - name: Run frontend tests
         run: npm test
-        working-directory: ./MERN_Todo  # Ensure the correct directory is set
+        working-directory: ./frontend  # Point to the frontend directory
+
+            # Step 13: Install backend dependencies
+      - name: Install backend dependencies
+        run: npm install
+        working-directory: ./backend  # Point to the backend directory
+
+            # Step 14: Run backend tests (if applicable)
+      - name: Run backend tests
+        run: npm test
+        working-directory: ./backend  # Point to the backend directory
 
       # Step 13: Start application-specific services using Docker Compose
       - name: Start application services
