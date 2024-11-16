@@ -85,17 +85,20 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
 
-      # Step 10: Install project dependencies
+            # Step 10: Install project dependencies
       - name: Install dependencies
         run: npm install
+        working-directory: ./MERN_Todo  # Ensure the correct directory is set
 
       # Step 11: Build the project
       - name: Build the project
         run: npm run build
+        working-directory: ./MERN_Todo  # Ensure the correct directory is set
 
       # Step 12: Run tests
       - name: Run tests
         run: npm test
+        working-directory: ./MERN_Todo  # Ensure the correct directory is set
 
       # Step 13: Start application-specific services using Docker Compose
       - name: Start application services
