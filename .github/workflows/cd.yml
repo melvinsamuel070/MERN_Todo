@@ -213,50 +213,55 @@ jobs:
         # Step 12: Start Docker Compose on EC2 with Debugging
       - name: Start Docker Compose on EC2 with Debugging
         run: |
-              ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-              set -x
-              trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
-
-              # Resolve dpkg lock issues
-              for lock in /var/lib/apt/lists/lock /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend; do
-                  if sudo lsof $lock &> /dev/null; then
-                      echo "Lock $lock is held. Killing process..."
-                      sudo kill $(sudo lsof -t $lock) || true
-                      sudo rm -f $lock
-                  fi
-              done
-
-              # Reconfigure dpkg and update apt cache
-              sudo dpkg --configure -a || true
-              sudo apt-get install -f -y || true
-              sudo apt-get update -y
-
-              # Ensure the system is upgraded to avoid dependency issues
-              sudo apt-get upgrade -y || true
-
-              # Install Docker if not installed
-              if ! command -v docker &> /dev/null; then
-                  echo "Docker not found, installing..."
-                  sudo apt-get install -y docker.io
-              else
-                  echo "Docker is already installed."
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+            # Enable debugging mode
+            set -x
+      
+            # Trap errors and exit with a message
+            trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
+      
+            # Resolve dpkg lock issues
+            for lock in /var/lib/apt/lists/lock /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend; do
+              if sudo lsof $lock &> /dev/null; then
+                echo "Lock $lock is held. Killing process..."
+                sudo kill $(sudo lsof -t $lock) || true
+                sudo rm -f $lock
               fi
-
-              # Install Docker Compose if not installed
-              if ! command -v docker-compose &> /dev/null; then
-                  echo "Docker Compose not found, installing..."
-                  sudo apt-get install -y docker-compose
-              else
-                  echo "Docker Compose is already installed."
-              fi
-
-              # Navigate to project directory and start Docker Compose
-              cd /home/ubuntu/MERN_Todo_app
-              sudo docker compose up -d || { echo "Failed to start Docker Compose"; exit 1; }
-
-              set +x
-              EOF
-              continue-on-error: false     
+            done
+      
+            # Reconfigure dpkg and update apt cache
+            sudo dpkg --configure -a || true
+            sudo apt-get install -f -y || true
+            sudo apt-get update -y
+      
+            # Ensure the system is upgraded to avoid dependency issues
+            sudo apt-get upgrade -y || true
+      
+            # Install Docker if not installed
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found, installing..."
+              sudo apt-get install -y docker.io
+            else
+              echo "Docker is already installed."
+            fi
+      
+            # Install Docker Compose if not installed
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Docker Compose not found, installing..."
+              sudo apt-get install -y docker-compose
+            else
+              echo "Docker Compose is already installed."
+            fi
+      
+            # Navigate to project directory and start Docker Compose
+            cd /home/ubuntu/MERN_Todo_app
+            sudo docker compose up -d || { echo "Failed to start Docker Compose"; exit 1; }
+      
+            # Disable debugging mode
+            set +x
+          EOF
+        continue-on-error: false
+          
           
       - name: Notify Pushgateway about pipeline progress (start)
         run: |
