@@ -262,7 +262,7 @@ jobs:
             fi
       
             # Navigate to project directory and start Docker Compose
-            cd /home/ubuntu/MERN_Todo_app
+            cd /home/ubuntu/MERN_Todo
             sudo docker compose up -d || { echo "Failed to start Docker Compose"; exit 1; }
       
             # Disable debugging mode
