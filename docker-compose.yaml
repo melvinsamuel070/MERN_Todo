@@ -1,14 +1,14 @@
 services:
-  mongo:
-    image: mongo  # Use the official MongoDB image
-    restart: always
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME  # Root username for MongoDB
-      - MONGO_INITDB_ROOT_PASSWORD  # Root password for MongoDB
-    volumes:
-      - mongo_data:/data/db  # Persist MongoDB data
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure MongoDB is on the same network
+  # mongo:
+  #   image: mongo  # Use the official MongoDB image
+  #   restart: always
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME  # Root username for MongoDB
+  #     - MONGO_INITDB_ROOT_PASSWORD  # Root password for MongoDB
+  #   volumes:
+  #     - mongo_data:/data/db  # Persist MongoDB data
+  #   networks:
+  #     - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure MongoDB is on the same network
 
   backend:
     image: melvinsamuel070/backend:latest  # Replace with your actual backend image name
@@ -17,16 +17,16 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3500:3500"  # Map the backend port to the host
+    environment:
+      - DB_URL=${DB_URL}
+      - PORT=${PORT}
     volumes:
       - backend_data:/app/data  # Optional for backend data persistence
     networks:
       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
-    environment:
-      - NODE_ENV=production
-      - DB_URL=mongodb://root:password@mongo:27017/  # Update to use local MongoDB connection
-    depends_on:
-      - mongo  # Ensure MongoDB starts before the backend
-
+    
+    # depends_on:
+    #   - mongo  # Ensure MongoDB starts before the backend
   frontend:
     image: melvinsamuel070/frontend1:latest  # Replace with your actual frontend image name
     build:
@@ -38,16 +38,14 @@ services:
       - backend  # Ensure the backend starts before the frontend
     networks:
       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
-
-  mongo-exporter:
-    image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
-    environment:
-      - MONGODB_URI=mongodb://root:password@mongo:27017/admin  # Connection string for MongoDB
-    depends_on:
-      - mongo
-    networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
-
+  # mongo-exporter:
+  #   image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
+  #   environment:
+  #     - MONGODB_URI=mongodb://root:password@mongo:27017/admin  # Connection string for MongoDB
+  #   depends_on:
+  #     - mongo
+  #   networks:
+  #     - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
   prometheus:
     image: prom/prometheus:v2.45.3
     restart: unless-stopped
@@ -110,9 +108,9 @@ services:
 
 networks:
   mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
-    driver: bridge
+    external: true
 
 volumes:
   backend_data:
-  mongo_data:  # Add a volume for MongoDB
+  # mongo_data:  # Add a volume for MongoDB
   grafana-data:  # Add a volume for Grafana

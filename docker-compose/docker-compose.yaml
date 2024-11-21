@@ -1,0 +1,56 @@
+
+
+services:
+  # Frontend Service
+  frontend:
+    image: melvinsamuel070/frontend1:latest
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend:3500  # Backend service URL
+    ports:
+      - "3000:3000"
+      - "3002:3000"  # For additional instances
+    networks:
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+  # Backend Service
+  backend:
+    image: melvinsamuel070/backend:latest
+    environment:
+      - DB_URL=${DB_URL}
+      - PORT=${PORT}
+    networks:
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+networks:
+  mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
+    external: true  # Use the same external network (created beforehand)
+
+
+
+
+
+# services:
+#   # Frontend Service
+#   frontend:
+#     image: melvinsamuel070/frontend1:latest
+#     container_name: frontend_instance
+#     environment:
+#       - REACT_APP_BACKEND_URL=http://backend:3500  # Backend service URL
+#     ports:
+#       - "3000:3000"  # Expose frontend on port 3000
+#     networks:
+#       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+#   # Backend Service
+#   backend:
+#     image: melvinsamuel070/backend:latest
+#     container_name: backend_instance
+#     environment:
+#       - DB_URL=${DB_URL}
+#       - PORT=${PORT}
+#     networks:
+#       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+# networks:
+#   mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
+#     external: true  # Use the same external network (created beforehand)

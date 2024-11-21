@@ -1,0 +1,60 @@
+
+services:
+  # Frontend Service
+  frontend:
+    image: melvinsamuel070/frontend1:latest
+    container_name: frontend_instance
+    ports:
+      - "3000:3000"  # Expose frontend on port 3000
+    networks:
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      env_file:
+      - .env  # Ensure the .env file is used
+
+  # Backend Service
+  backend:
+    image: melvinsamuel070/backend:latest
+    container_name: backend_instance
+    environment:
+      - DB_URL=${DB_URL}
+      - PORT=${PORT}
+    ports:
+      - "3500:3500"  # Expose backend on port 3500 for internal/external communication
+    networks:
+      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      env_file:
+      - .env  # Ensure the .env file is used
+
+networks:
+  mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
+    external: true
+
+
+
+# services:
+#   # Frontend Service
+#   frontend:
+#     image: melvinsamuel070/frontend1:latest
+#     container_name: frontend_instance
+#     environment:
+#       - NODE_ENV=production  # Ensures the React app runs in production mode
+#     ports:
+#       - "3000:3000"  # Expose frontend on port 3000
+#     networks:
+#       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+#   # Backend Service
+#   backend:
+#     image: melvinsamuel070/backend:latest
+#     container_name: backend_instance
+#     environment:
+#       - DB_URL=${DB_URL}  # MongoDB connection string
+#       - PORT=${PORT}      # Port for backend
+#       - NODE_ENV=production  # Ensures the backend runs in production mode
+#     networks:
+#       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+#     # No external port mapping, communicates only via internal network
+
+# networks:
+#   mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
+#     external: true  # Use the same external network created beforehand

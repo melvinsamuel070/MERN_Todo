@@ -17,6 +17,7 @@ COPY . .
 EXPOSE 3500
 
 # Define environment variables to be used by the container
+ENV DB_URL="mongodb+srv://kingsamuel412:RpB5Hq1QTiL0ngI4@revers.vjsds.mongodb.net/?retryWrites=true&w=majority&appName=revers"
 ENV PORT=3500
 # You can set other environment variables like MongoDB URL here
 # ENV DB_URL=mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
