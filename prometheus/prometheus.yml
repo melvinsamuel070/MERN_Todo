@@ -9,35 +9,35 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - 'mern_todo_app-alertmanager-1:9092'  # Pointing to the Alertmanager container
+            - 'mern_todo-alertmanager-1:9092'  # Pointing to the Alertmanager container
 
 scrape_configs:
   # Scrape configuration for Prometheus itself
-  - job_name: mern_todo_app-prometheus-1
+  - job_name: mern_todo-prometheus-1
     static_configs:
       - targets:
-          - 'mern_todo_app-prometheus-1:9090'  # Monitoring Prometheus
+          - 'mern_todo-prometheus-1:9090'  # Monitoring Prometheus
 
   # Scrape configuration for Node Exporter (system-level metrics)
-  - job_name: mern_todo_app-node-exporter-1
+  - job_name: mern_todo-node-exporter-1
     static_configs:
       - targets:
-          - 'mern_todo_app-node-exporter-1:9100'  # Monitoring Node Exporter
+          - 'mern_todo-node-exporter-1:9100'  # Monitoring Node Exporter
 
   # Scrape configuration for the backend application
-  - job_name: mern_todo_app-backend-1
+  - job_name: mern_todo-backend-1
     static_configs:
       - targets:
-          - 'mern_todo_app-backend-1:3500'  # Monitoring the backend service
+          - 'mern_todo-backend-1:3500'  # Monitoring the backend service
 
   # Scrape configuration for MongoDB Exporter (MongoDB metrics)
   - job_name: mern_todo_app-mongo-exporter-1
     static_configs:
       - targets:
-          - 'mern_todo_app-mongo-exporter-1:9216'  # Monitoring MongoDB Exporter
+          - 'mern_todo-mongo-exporter-1:9216'  # Monitoring MongoDB Exporter
 
   # Scrape configuration for Push Gateway
-  - job_name: mern_todo_app-pushgateway-1
+  - job_name: mern_todo-pushgateway-1
     static_configs:
       - targets:
-          - 'mern_todo_app-pushgateway-1:9091'  # Monitoring Push Gateway
+          - 'mern_todo-pushgateway-1:9091'  # Monitoring Push Gateway

@@ -23,7 +23,7 @@ services:
     volumes:
       - backend_data:/app/data  # Optional for backend data persistence
     networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
     
     # depends_on:
     #   - mongo  # Ensure MongoDB starts before the backend
@@ -37,7 +37,7 @@ services:
     depends_on:
       - backend  # Ensure the backend starts before the frontend
     networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
   # mongo-exporter:
   #   image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
   #   environment:
@@ -57,7 +57,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
+      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
 
   pushgateway:
     image: prom/pushgateway:latest  # Pushgateway image
@@ -65,7 +65,7 @@ services:
       - '9091:9091'  # Expose Pushgateway's port
     restart: always
     networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network 
+      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network 
 
   node-exporter:
     image: prom/node-exporter:v1.7.0
@@ -82,7 +82,7 @@ services:
     ports:
       - "9100:9100"
     networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Node Exporter is on the same network
+      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Node Exporter is on the same network
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
@@ -92,7 +92,7 @@ services:
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
 
 
   grafana:
@@ -104,10 +104,10 @@ services:
       - grafana-data:/var/lib/grafana
     restart: unless-stopped
     networks:
-      - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Grafana is on the same network
+      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Grafana is on the same network
 
 networks:
-  mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
+  mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
     driver: bridge
 
 
