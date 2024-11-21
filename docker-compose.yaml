@@ -108,7 +108,8 @@ services:
 
 networks:
   mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
-    external: true
+    driver: bridge
+
 
 volumes:
   backend_data:
