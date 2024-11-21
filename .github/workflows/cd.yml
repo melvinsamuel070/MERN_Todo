@@ -147,7 +147,7 @@ jobs:
            cd /home/ubuntu/MERN_Todo
            NODE_OPTIONS=--max-old-space-size=4096 sudo docker compose up -d 
 
-              # Verify running containers
+          # Verify running containers
               RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
               REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
               for container in $REQUIRED_CONTAINERS; do
@@ -157,7 +157,7 @@ jobs:
               fi
               done
               echo "All required containers are running."
-              EOF
+            EOF
 
       # Step 8: Notify Success
       - name: Notify Success
