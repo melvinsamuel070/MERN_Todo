@@ -92,65 +92,73 @@ jobs:
       - name: Start application services
         run: docker-compose up -d
 
-      # Step 14: Deploy to EC2
+              # Step 14: Deploy to EC2
       - name: Deploy to EC2
         env:
           EC2_USER: "ubuntu"
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
-            PROJECT_DIR="/home/ubuntu/MERN_Todo"
-            if [ ! -d "$PROJECT_DIR" ]; then
+              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+              PROJECT_DIR="/home/ubuntu/MERN_Todo"
+              if [ ! -d "$PROJECT_DIR" ]; then
               echo "Creating project directory..."
               mkdir -p "$PROJECT_DIR"
-            else
+              else
               echo "Project directory already exists."
-            fi
-          EOF
+              fi
+              EOF
 
-          
-          # Sync required files to EC2 instance
-          scp -o StrictHostKeyChecking=no -i key.pem -r alertmanager $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo/ &
-          scp -o StrictHostKeyChecking=no -i key.pem -r backend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo/ &
-          scp -o StrictHostKeyChecking=no -i key.pem bash.sh $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo_app/ &
-          scp -o StrictHostKeyChecking=no -i key.pem docker-compose.yaml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo/ &
-          scp -o StrictHostKeyChecking=no -i key.pem -r frontend $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo/ &
-          scp -o StrictHostKeyChecking=no -i key.pem -r prometheus $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo/ &
-          scp -o StrictHostKeyChecking=no -i key.pem prometheus.yml $EC2_USER@$INSTANCE_IP:/home/ubuntu/MERN_Todo/ &
-          wait
-      # Step 6: Load environment variables from the .env file in your repository
-      - name: Load environment variables from .env 
+              # Sync required files to EC2 instance
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              wait
+
+              # Step 6: Set Environment Variables for Deployment
+      - name: Set Environment Variables
+        env:
+         BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
+         FRONTEND_IMAGE: ${{ secrets.FRONTEND_IMAGE }}
+         ALERTMANAGER_URL: ${{ secrets.ALERTMANAGER_URL }}
         run: |
-              export $(grep -v '^#' .env | xargs)  # Load variables from .env  and export them
-      # Step 7: Deploy and Run Containers
+          echo "Deploying containers with the following images:"
+          echo "Backend Image: $BACKEND_IMAGE"
+          echo "Frontend Image: $FRONTEND_IMAGE"
+          echo "Alertmanager URL: $ALERTMANAGER_URL"
+
+        # Step 7: Deploy and Run Containers
       - name: Deploy and Run Containers
         env:
-                  INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
-                  EC2_USER: ${{ secrets.EC2_USER }}
+         INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+         EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-                  ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
-                    set -e
-                    
-                    # Install Docker Compose if not already installed
-                    if ! command -v docker-compose &> /dev/null; then
-                      sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
-                      sudo chmod +x /usr/local/bin/docker-compose
-                    fi
-                    
-                    # Navigate to the application directory and run Docker Compose with increased memory
-                    cd /home/ubuntu/MERN_Todo_app
-                    NODE_OPTIONS=--max-old-space-size=4096 sudo docker compose up -d 
-              
-                    # Verify running containers
-                    RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
-                    REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
-                    for container in $REQUIRED_CONTAINERS; do
-                      if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
-                        echo "Warning: $container is not running."
-                        exit 1
-                      fi
-                    done
-                    echo "All required containers are running."
-                  EOF
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
+          set -e
+          # Install Docker Compose if not already installed
+           if ! command -v docker-compose &> /dev/null; then
+           sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
+           sudo chmod +x /usr/local/bin/docker-compose
+           fi
+
+          # Navigate to the application directory and run Docker Compose with increased memory
+           cd /home/ubuntu/MERN_Todo
+           NODE_OPTIONS=--max-old-space-size=4096 sudo docker compose up -d 
+
+              # Verify running containers
+              RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
+              REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
+              for container in $REQUIRED_CONTAINERS; do
+              if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
+              echo "Warning: $container is not running."
+              exit 1
+              fi
+              done
+              echo "All required containers are running."
+              EOF
+
       # Step 8: Notify Success
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."

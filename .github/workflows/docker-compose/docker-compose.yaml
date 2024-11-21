@@ -10,7 +10,7 @@ services:
       - "3000:3000"  # Expose frontend on port 3000
     networks:
       - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
-      env:
+      .env:
       - .env  # Ensure the .env file is used
 
   # Backend Service
