@@ -91,6 +91,7 @@ jobs:
       # Step 13: Start application-specific services using Docker Compose
       - name: Start application services
         run: docker-compose up -d
+        
 
               # Step 14: Deploy to EC2
       - name: Deploy to EC2
@@ -148,16 +149,16 @@ jobs:
            NODE_OPTIONS=--max-old-space-size=4096 sudo docker compose up -d 
 
           # Verify running containers
-              RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
-              REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
-              for container in $REQUIRED_CONTAINERS; do
-              if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
-              echo "Warning: $container is not running."
-              exit 1
-              fi
-              done
-              echo "All required containers are running."
-            EOF
+            RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
+            REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
+            for container in $REQUIRED_CONTAINERS; do
+            if [[ ! "$RUNNING_CONTAINERS" =~ "$container" ]]; then
+            echo "Warning: $container is not running."
+            exit 1
+            fi
+            done
+            echo "All required containers are running."
+          EOF
 
       # Step 8: Notify Success
       - name: Notify Success
