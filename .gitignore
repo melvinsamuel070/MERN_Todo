@@ -27,6 +27,7 @@ todo/*/node_modules/
 */node_modules/
 
 # variables
- .env
-.env.*
+ /.env
+/backend/.env
+
 

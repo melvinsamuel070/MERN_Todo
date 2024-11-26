@@ -197,22 +197,30 @@ jobs:
       - name: Push Frontend Image to Docker Hub
         run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
       
-      - name: Start Alertmanager (If Needed)
+      - name: Start Alertmanager
         run: |
-          echo "Starting Alertmanager..."
-          docker run -d -p ${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }
-
-      - name: Wait for Alertmanager to be Ready
+             docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
+      - name: Wait for Alertmanager to be ready
         run: |
-          echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
-          for i in {1..10}; do 
-            if curl -s -f http://localhost:${{ secrets.ALERTMANAGER_PORT }}; then 
-              echo "Alertmanager is up and running!"; 
-              break; 
-            fi; 
-            echo "Waiting for Alertmanager to be ready..."; 
-            sleep 6; 
-          done || { echo "Alertmanager failed to start"; exit 1; }
+         for i in {1..10}; do 
+         if curl -s -f http://localhost:9092; then 
+         echo "Alertmanager is up and running!"; 
+         break; 
+           fi; 
+           echo "Waiting for Alertmanager to be ready..."; 
+           sleep 6; 
+           done
+      # - name: Wait for Alertmanager to be Ready
+      #   run: |
+      #     echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
+      #     for i in {1..10}; do 
+      #       if curl -s -f http://localhost:${{ secrets.ALERTMANAGER_PORT }}; then 
+      #         echo "Alertmanager is up and running!"; 
+      #         break; 
+      #       fi; 
+      #       echo "Waiting for Alertmanager to be ready..."; 
+      #       sleep 6; 
+      #     done || { echo "Alertmanager failed to start"; exit 1; }
 
       - name: Notify Alertmanager of Build Success
         run: |
