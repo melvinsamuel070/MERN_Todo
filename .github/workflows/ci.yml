@@ -63,31 +63,31 @@
 #             echo "Waiting for Alertmanager to be ready..."; 
 #             sleep 6; 
 #           done
-#       - name: Notify Alertmanager of Build Success
-#         run: |
-#             response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
-#               {
-#                 "labels": {
-#                   "alertname": "BuildSuccess",
-#                   "severity": "info",
-#                   "team": "development",
-#                   "environment": "production"
-#                 },
-#                 "annotations": {
-#                   "summary": "Build Successful",
-#                   "description": "The latest build was successful."
-#                 }
-#               }
-#             ]' http://localhost:9092/api/v2/alerts)
+      # - name: Notify Alertmanager of Build Success
+      #   run: |
+      #       response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+      #         {
+      #           "labels": {
+      #             "alertname": "BuildSuccess",
+      #             "severity": "info",
+      #             "team": "development",
+      #             "environment": "production"
+      #           },
+      #           "annotations": {
+      #             "summary": "Build Successful",
+      #             "description": "The latest build was successful."
+      #           }
+      #         }
+      #       ]' http://localhost:9092/api/v2/alerts)
         
-#             echo "Response Code: $response"
+      #       echo "Response Code: $response"
         
-#             if [ "$response" -ne 200 ]; then
-#               echo "Failed to notify Alertmanager: HTTP Status $response"
-#               exit 1
-#             else
-#               echo "Successfully notified Alertmanager of build success."
-#             fi
+      #       if [ "$response" -ne 200 ]; then
+      #         echo "Failed to notify Alertmanager: HTTP Status $response"
+      #         exit 1
+      #       else
+      #         echo "Successfully notified Alertmanager of build success."
+      #       fi
         
 #       - name: Send Email Notification for Build Success
 #         uses: dawidd6/action-send-mail@v3
@@ -197,11 +197,13 @@ jobs:
       - name: Push Frontend Image to Docker Hub
         run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
       
-      - name: Cleanup Docker
+      - name: Start Alertmanager
         run: |
-          docker ps -q --filter "name=alertmanager" | xargs -r docker rm -f
-          docker ps -q | xargs -r docker stop
-          docker system prune -f
+          if lsof -i :9092; then
+            echo "Port 9092 is already in use";
+            exit 1;
+          fi
+          docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
       
       - name: Wait for Alertmanager to be ready
         run: |
@@ -225,33 +227,58 @@ jobs:
       #       sleep 6; 
       #     done || { echo "Alertmanager failed to start"; exit 1; }
 
+      # - name: Notify Alertmanager of Build Success
+      #   run: |
+      #     echo "Notifying Alertmanager of Build Success..."
+      #     response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+      #       {
+      #         "labels": {
+      #           "alertname": "BuildSuccess",
+      #           "severity": "info",
+      #           "team": "development",
+      #           "environment": "production"
+      #         },
+      #         "annotations": {
+      #           "summary": "Build Successful",
+      #           "description": "The latest build was successful."
+      #         }
+      #       }
+      #     ]' ${{ secrets.ALERTMANAGER_URL }})
+          
+      #     echo "Response Code: $response"
+        
+      #     if [ "$response" -ne 200 ]; then
+      #       echo "Failed to notify Alertmanager: HTTP Status $response"
+      #       exit 1
+      #     else
+      #       echo "Successfully notified Alertmanager of build success."
+      #     fi
+
       - name: Notify Alertmanager of Build Success
         run: |
-          echo "Notifying Alertmanager of Build Success..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
-            {
-              "labels": {
-                "alertname": "BuildSuccess",
-                "severity": "info",
-                "team": "development",
-                "environment": "production"
-              },
-              "annotations": {
-                "summary": "Build Successful",
-                "description": "The latest build was successful."
+            response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+              {
+                "labels": {
+                  "alertname": "BuildSuccess",
+                  "severity": "info",
+                  "team": "development",
+                  "environment": "production"
+                },
+                "annotations": {
+                  "summary": "Build Successful",
+                  "description": "The latest build was successful."
+                }
               }
-            }
-          ]' ${{ secrets.ALERTMANAGER_URL }})
-          
-          echo "Response Code: $response"
+            ]' http://localhost:9092/api/v2/alerts)
         
-          if [ "$response" -ne 200 ]; then
-            echo "Failed to notify Alertmanager: HTTP Status $response"
-            exit 1
-          else
-            echo "Successfully notified Alertmanager of build success."
-          fi
-
+            echo "Response Code: $response"
+        
+            if [ "$response" -ne 200 ]; then
+              echo "Failed to notify Alertmanager: HTTP Status $response"
+              exit 1
+            else
+              echo "Successfully notified Alertmanager of build success."
+            fi
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
         with:
