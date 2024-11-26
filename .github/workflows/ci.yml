@@ -200,10 +200,10 @@ jobs:
               # Step 1: Start Alertmanager (If needed)
       - name: Start Alertmanager
         run: |
-            echo "Starting Alertmanager..."
-            # Use secrets for port and image if necessary, here just using default for simplicity
-            docker run -d -p ${{ secrets.ALERTMANAGER_PORT }}:${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }
-
+          echo "Starting Alertmanager..."
+           # Ensure ALERTMANAGER_PORT is a valid port (e.g., 9092)
+           docker run -d -p ${{ secrets.ALERTMANAGER_PORT }}:${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }
+            
           # Step 2: Wait for Alertmanager to be ready
       - name: Wait for Alertmanager to be ready
         run: |
