@@ -197,9 +197,12 @@ jobs:
       - name: Push Frontend Image to Docker Hub
         run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
       
-      - name: Start Alertmanager
+      - name: Cleanup Docker
         run: |
-             docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
+          docker ps -q --filter "name=alertmanager" | xargs -r docker rm -f
+          docker ps -q | xargs -r docker stop
+          docker system prune -f
+      
       - name: Wait for Alertmanager to be ready
         run: |
          for i in {1..10}; do 
