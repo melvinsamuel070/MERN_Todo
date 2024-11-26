@@ -197,13 +197,22 @@ jobs:
       - name: Push Frontend Image to Docker Hub
         run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
       
-      - name: Start Alertmanager
+      - name: Free Up Port 9092
         run: |
           if lsof -i :9092; then
-            echo "Port 9092 is already in use";
-            exit 1;
+            echo "Stopping process using port 9092"
+            lsof -i :9092 | awk 'NR!=1 {print $2}' | xargs -r kill -9
           fi
+
+      - name: Cleanup Previous Containers
+        run: |
+          docker ps -q --filter "name=alertmanager" | xargs -r docker stop
+          docker ps -aq --filter "name=alertmanager" | xargs -r docker rm
+
+      - name: Start Alertmanager
+        run: |
           docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
+
       
       - name: Wait for Alertmanager to be ready
         run: |
