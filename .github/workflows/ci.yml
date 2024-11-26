@@ -115,9 +115,6 @@
 
 
 
-
-
-
 name: CI Pipeline
 
 on:
@@ -129,6 +126,7 @@ env:
   BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
   FRONTEND_IMAGE: ${{ secrets.FRONTEND_IMAGE }}
   ALERTMANAGER_URL: ${{ secrets.ALERTMANAGER_URL }}
+  BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
 
 jobs:
   build:
@@ -138,7 +136,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
         id: checkout
-      
+
       - name: Print Debug Info - Branch and Commit
         run: |
           echo "Branch: ${GITHUB_REF#refs/heads/}"
@@ -150,41 +148,34 @@ jobs:
         uses: docker/setup-buildx-action@v1
         id: buildx_setup
 
-      - name: Build Docker Images with Docker-Compose.yaml
+      - name: Install Docker Compose
+        run: |
+          echo "Installing Docker Compose..."
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+          docker-compose --version
+
+      - name: Build Docker Images with Docker-Compose
         run: |
           echo "Building Docker images..."
           docker-compose -f docker-compose.yaml build || { echo "Docker build failed"; exit 1; }
-        
+
       - name: Run Docker-Compose Services
         run: |
           echo "Starting Docker services..."
           docker-compose -f docker-compose.yaml up -d || { echo "Docker Compose up failed"; exit 1; }
-      
+
       - name: Wait for Backend to be Ready
         run: |
-            BACKEND_PORT=${{ secrets.BACKEND_PORT }}
-            echo "Waiting for Backend to be ready on port $BACKEND_PORT..."
-            for i in {1..10}; do 
-              if curl -s -f http://localhost:$BACKEND_PORT; then 
-                echo "Backend is up and running!"; 
-                break; 
-              fi; 
-              echo "Waiting for Backend to be ready..."; 
-              sleep 6; 
-            done || { echo "Backend failed to start"; exit 1; }
-        
-
-      # - name: Wait for Backend to be Ready
-      #   run: |
-      #     echo "Waiting for Backend to be ready on port 3500..."
-      #     for i in {1..10}; do 
-      #       if curl -s -f http://localhost:3500; then 
-      #         echo "Backend is up and running!"; 
-      #         break; 
-      #       fi; 
-      #       echo "Waiting for Backend to be ready..."; 
-      #       sleep 6; 
-      #     done || { echo "Backend failed to start"; exit 1; }
+          echo "Waiting for Backend to be ready on port $BACKEND_PORT..."
+          for i in {1..10}; do 
+            if curl -s -f http://localhost:$BACKEND_PORT; then 
+              echo "Backend is up and running!"; 
+              break; 
+            fi; 
+            echo "Waiting for Backend to be ready..."; 
+            sleep 6; 
+          done || { echo "Backend failed to start"; exit 1; }
 
       - name: Upload Build Logs
         if: always()
@@ -212,39 +203,20 @@ jobs:
 
       - name: Start Alertmanager (If Needed)
         run: |
-            echo "Starting Alertmanager..."
-            docker run -d -p ${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }    
+          echo "Starting Alertmanager..."
+          docker run -d -p ${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }
 
-      # - name: Start Alertmanager (If Needed)
-      #   run: |
-      #     echo "Starting Alertmanager..."
-      #     docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0 || { echo "Failed to start Alertmanager"; exit 1; }
-
-      - name: Wait for Alertmanager to be ready
+      - name: Wait for Alertmanager to be Ready
         run: |
-          ALERTMANAGER_PORT=${{ secrets.ALERTMANAGER_PORT }}
-          echo "Waiting for Alertmanager to be ready on port $ALERTMANAGER_PORT..."
+          echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
           for i in {1..10}; do 
-          if curl -s -f http://localhost:$ALERTMANAGER_PORT; then 
-             echo "Alertmanager is up and running!"; 
-             break; 
-          fi; 
-          echo "Waiting for Alertmanager to be ready..."; 
-          sleep 6; 
+            if curl -s -f http://localhost:${{ secrets.ALERTMANAGER_PORT }}; then 
+              echo "Alertmanager is up and running!"; 
+              break; 
+            fi; 
+            echo "Waiting for Alertmanager to be ready..."; 
+            sleep 6; 
           done || { echo "Alertmanager failed to start"; exit 1; }
-
-
-      # - name: Wait for Alertmanager to be ready
-      #   run: |
-      #     echo "Waiting for Alertmanager to be ready on port 9092..."
-      #     for i in {1..10}; do 
-      #       if curl -s -f http://localhost:9092; then 
-      #         echo "Alertmanager is up and running!"; 
-      #         break; 
-      #       fi; 
-      #       echo "Waiting for Alertmanager to be ready..."; 
-      #       sleep 6; 
-      #     done || { echo "Alertmanager failed to start"; exit 1; }
 
       - name: Notify Alertmanager of Build Success
         run: |
