@@ -196,35 +196,32 @@ jobs:
         
       - name: Push Frontend Image to Docker Hub
         run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
-      
-      - name: Start Alertmanager (If Needed)
+              
+              # Step 1: Start Alertmanager (If needed)
+      - name: Start Alertmanager
         run: |
-          echo "Starting Alertmanager..."
-      
-          # Ensure ALERTMANAGER_PORT and ALERTMANAGER_IMAGE are set and valid
-          if [[ -z "${{ secrets.ALERTMANAGER_PORT }}" ]] || [[ -z "${{ secrets.ALERTMANAGER_IMAGE }}" ]] || [[ -z "${{ secrets.ALERTMANAGER_URL }}" ]]; then
-            echo "ALERTMANAGER_PORT, ALERTMANAGER_IMAGE, or ALERTMANAGER_URL is not set properly. Exiting."
-            exit 1
-          fi
-      
-          # Check if the port is already in use (using netstat)
-          if netstat -tuln | grep ":${{ secrets.ALERTMANAGER_PORT }} "; then
-            echo "Port ${{ secrets.ALERTMANAGER_PORT }} is already in use. Skipping Alertmanager start.";
-          else
-            # Run Alertmanager container if port is free
+            echo "Starting Alertmanager..."
+            # Use secrets for port and image if necessary, here just using default for simplicity
             docker run -d -p ${{ secrets.ALERTMANAGER_PORT }}:${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }
-          fi
-        env:
-          ALERTMANAGER_PORT: ${{ secrets.ALERTMANAGER_PORT }}
-          ALERTMANAGER_IMAGE: ${{ secrets.ALERTMANAGER_IMAGE }}
-          ALERTMANAGER_URL: ${{ secrets.ALERTMANAGER_URL }}
-      
-      
 
+          # Step 2: Wait for Alertmanager to be ready
+      - name: Wait for Alertmanager to be ready
+        run: |
+            echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
+            for i in {1..10}; do 
+            if curl -s -f http://localhost:${{ secrets.ALERTMANAGER_PORT }}; then 
+              echo "Alertmanager is up and running!"; 
+              break; 
+            fi; 
+            echo "Waiting for Alertmanager to be ready..."; 
+            sleep 6; 
+            done || { echo "Alertmanager failed to start"; exit 1; }
+
+           # Step 3: Notify Alertmanager of Build Success
       - name: Notify Alertmanager of Build Success
         run: |
-          echo "Notifying Alertmanager of Build Success..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+            echo "Sending build success notification to Alertmanager..."
+            response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
             {
               "labels": {
                 "alertname": "BuildSuccess",
@@ -237,16 +234,13 @@ jobs:
                 "description": "The latest build was successful."
               }
             }
-          ]' ${{ secrets.ALERTMANAGER_URL }})
-          
-          echo "Response Code: $response"
-        
-          if [ "$response" -ne 200 ]; then
-            echo "Failed to notify Alertmanager: HTTP Status $response"
+            ]' http://localhost:${{ secrets.ALERTMANAGER_PORT }}/api/v2/alerts)
+            if [ "$response" != "200" ]; then
+            echo "Failed to notify Alertmanager. Response code: $response"
             exit 1
-          else
-            echo "Successfully notified Alertmanager of build success."
-          fi
+            fi
+            echo "Alertmanager notified successfully."
+
 
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
