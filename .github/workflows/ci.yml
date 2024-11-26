@@ -3,179 +3,38 @@
 
 
 
-# name: CI
-
-# on:
-#   push:
-#     branches:
-#       - master
-      
-# env:
-#   BACKEND_IMAGE: melvinsamuel070/backend:latest
-#   FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
-#   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
-#         id: checkout
-      
-#       - name: Print Debug Info - Branch and Commit
-#         run: |
-#           echo "Branch: ${{ github.ref }}"
-#           echo "Commit: ${{ github.sha }}"
-#       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v1
-
-#       - name: Build Backend Image
-#         run: docker build -t ${{ env.BACKEND_IMAGE }} -f ./backend/Dockerfile ./backend
-
-#       - name: Build Frontend Image
-#         run: docker build -t ${{ env.FRONTEND_IMAGE }} -f ./frontend/Dockerfile ./frontend
-
-#       - name: Upload Build Logs
-#         if: always()
-#         uses: actions/upload-artifact@v3
-#         with:
-#           name: build-logs
-#           path: |
-#             ./backend/build.log
-#             ./frontend/build.log
-#       - name: Login to Docker Hub
-#         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-
-#       - name: Push Backend Image to Docker Hub
-#         run: docker push ${{ env.BACKEND_IMAGE }}
-
-#       - name: Start Alertmanager
-#         run: |
-#           docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
-#       - name: Wait for Alertmanager to be ready
-#         run: |
-#           for i in {1..10}; do 
-#             if curl -s -f http://localhost:9092; then 
-#               echo "Alertmanager is up and running!"; 
-#               break; 
-#             fi; 
-#             echo "Waiting for Alertmanager to be ready..."; 
-#             sleep 6; 
-#           done
-      # - name: Notify Alertmanager of Build Success
-      #   run: |
-      #       response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
-      #         {
-      #           "labels": {
-      #             "alertname": "BuildSuccess",
-      #             "severity": "info",
-      #             "team": "development",
-      #             "environment": "production"
-      #           },
-      #           "annotations": {
-      #             "summary": "Build Successful",
-      #             "description": "The latest build was successful."
-      #           }
-      #         }
-      #       ]' http://localhost:9092/api/v2/alerts)
-        
-      #       echo "Response Code: $response"
-        
-      #       if [ "$response" -ne 200 ]; then
-      #         echo "Failed to notify Alertmanager: HTTP Status $response"
-      #         exit 1
-      #       else
-      #         echo "Successfully notified Alertmanager of build success."
-      #       fi
-        
-#       - name: Send Email Notification for Build Success
-#         uses: dawidd6/action-send-mail@v3
-#         with:
-#             server_address: smtp.gmail.com
-#             server_port: 587
-#             username: ${{ secrets.EMAIL_USERNAME }}
-#             password: ${{ secrets.EMAIL_PASSWORD }}
-#             subject: "Build Success: CI Pipeline"
-#             body: "The build stage of your CI pipeline completed successfully."
-#             to: kingsamuel412@gmail.com
-#             from: ${{ secrets.EMAIL_USERNAME }}
-
-#   trigger_cd:
-#     needs: build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Trigger CD Pipeline
-#         run: |
-#           curl -X POST \
-#             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-#             -d '{"event_type": "start_cd_pipeline"}' \
-#             "https://api.github.com/repos/${{ github.repository }}/dispatches"
-
-
-
-
-name: CI Pipeline
+name: CI
 
 on:
   push:
     branches:
-      - master  
-
+      - master
+      
 env:
-  BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
-  FRONTEND_IMAGE: ${{ secrets.FRONTEND_IMAGE }}
-  ALERTMANAGER_URL: ${{ secrets.ALERTMANAGER_URL }}
-  BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
+  BACKEND_IMAGE: melvinsamuel070/backend:latest
+  FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
+  ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         id: checkout
-
+      
       - name: Print Debug Info - Branch and Commit
         run: |
-          echo "Branch: ${GITHUB_REF#refs/heads/}"
+          echo "Branch: ${{ github.ref }}"
           echo "Commit: ${{ github.sha }}"
-          echo "Current Directory: $(pwd)"
-          echo "List of files: $(ls -l)"
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-        id: buildx_setup
 
-      - name: Install Docker Compose
-        run: |
-          echo "Installing Docker Compose..."
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
-          docker-compose --version
+      - name: Build Backend Image
+        run: docker build -t ${{ env.BACKEND_IMAGE }} -f ./backend/Dockerfile ./backend
 
-      - name: Build Docker Images with Docker-Compose
-        run: |
-          echo "Building Docker images..."
-          docker-compose -f docker-compose.yaml build || { echo "Docker build failed"; exit 1; }
-
-      - name: Run Docker-Compose Services
-        run: |
-          echo "Starting Docker services..."
-          docker-compose -f docker-compose.yaml up -d || { echo "Docker Compose up failed"; exit 1; }
-
-      - name: Wait for Backend to be Ready
-        run: |
-          echo "Waiting for Backend to be ready on port $BACKEND_PORT..."
-          for i in {1..10}; do 
-            if curl -s -f http://localhost:$BACKEND_PORT; then 
-              echo "Backend is up and running!"; 
-              break; 
-            fi; 
-            echo "Waiting for Backend to be ready..."; 
-            sleep 6; 
-          done || { echo "Backend failed to start"; exit 1; }
+      - name: Build Frontend Image
+        run: docker build -t ${{ env.FRONTEND_IMAGE }} -f ./frontend/Dockerfile ./frontend
 
       - name: Upload Build Logs
         if: always()
@@ -185,84 +44,25 @@ jobs:
           path: |
             ./backend/build.log
             ./frontend/build.log
-
       - name: Login to Docker Hub
-        run: |
-          echo "Logging in to Docker Hub..."
-          echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin || { echo "Docker login failed"; exit 1; }
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Push Backend Image to Docker Hub
-        run: echo "Pushing Backend image to Docker Hub..." && docker push ${{ secrets.BACKEND_IMAGE }} || (echo "Docker push failed" && exit 1)
-        
-      - name: Push Frontend Image to Docker Hub
-        run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
-      
-      - name: Free Up Port 9092
-        run: |
-          if lsof -i :9092; then
-            echo "Stopping process using port 9092"
-            lsof -i :9092 | awk 'NR!=1 {print $2}' | xargs -r kill -9
-          fi
-
-      - name: Cleanup Previous Containers
-        run: |
-          docker ps -q --filter "name=alertmanager" | xargs -r docker stop
-          docker ps -aq --filter "name=alertmanager" | xargs -r docker rm
+        run: docker push ${{ env.BACKEND_IMAGE }}
 
       - name: Start Alertmanager
         run: |
           docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
-
-      
       - name: Wait for Alertmanager to be ready
         run: |
-         for i in {1..10}; do 
-         if curl -s -f http://localhost:9092; then 
-         echo "Alertmanager is up and running!"; 
-         break; 
-           fi; 
-           echo "Waiting for Alertmanager to be ready..."; 
-           sleep 6; 
-           done
-      # - name: Wait for Alertmanager to be Ready
-      #   run: |
-      #     echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
-      #     for i in {1..10}; do 
-      #       if curl -s -f http://localhost:${{ secrets.ALERTMANAGER_PORT }}; then 
-      #         echo "Alertmanager is up and running!"; 
-      #         break; 
-      #       fi; 
-      #       echo "Waiting for Alertmanager to be ready..."; 
-      #       sleep 6; 
-      #     done || { echo "Alertmanager failed to start"; exit 1; }
-
-      # - name: Notify Alertmanager of Build Success
-      #   run: |
-      #     echo "Notifying Alertmanager of Build Success..."
-      #     response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
-      #       {
-      #         "labels": {
-      #           "alertname": "BuildSuccess",
-      #           "severity": "info",
-      #           "team": "development",
-      #           "environment": "production"
-      #         },
-      #         "annotations": {
-      #           "summary": "Build Successful",
-      #           "description": "The latest build was successful."
-      #         }
-      #       }
-      #     ]' ${{ secrets.ALERTMANAGER_URL }})
-          
-      #     echo "Response Code: $response"
-        
-      #     if [ "$response" -ne 200 ]; then
-      #       echo "Failed to notify Alertmanager: HTTP Status $response"
-      #       exit 1
-      #     else
-      #       echo "Successfully notified Alertmanager of build success."
-      #     fi
-
+          for i in {1..10}; do 
+            if curl -s -f http://localhost:9092; then 
+              echo "Alertmanager is up and running!"; 
+              break; 
+            fi; 
+            echo "Waiting for Alertmanager to be ready..."; 
+            sleep 6; 
+          done
       - name: Notify Alertmanager of Build Success
         run: |
             response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
@@ -288,17 +88,18 @@ jobs:
             else
               echo "Successfully notified Alertmanager of build success."
             fi
+        
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Build Success: CI Pipeline"
-          body: "The build stage of your CI pipeline completed successfully."
-          to: kingsamuel412@gmail.com
-          from: ${{ secrets.EMAIL_USERNAME }}
+            server_address: smtp.gmail.com
+            server_port: 587
+            username: ${{ secrets.EMAIL_USERNAME }}
+            password: ${{ secrets.EMAIL_PASSWORD }}
+            subject: "Build Success: CI Pipeline"
+            body: "The build stage of your CI pipeline completed successfully."
+            to: kingsamuel412@gmail.com
+            from: ${{ secrets.EMAIL_USERNAME }}
 
   trigger_cd:
     needs: build
@@ -306,8 +107,207 @@ jobs:
     steps:
       - name: Trigger CD Pipeline
         run: |
-          echo "Triggering CD pipeline..."
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -d '{"event_type": "start_cd_pipeline"}' \
-            "https://api.github.com/repos/${{ github.repository }}/dispatches" || { echo "Failed to trigger CD pipeline"; exit 1; }
+            "https://api.github.com/repos/${{ github.repository }}/dispatches"
+
+
+
+
+# name: CI Pipeline
+
+# on:
+#   push:
+#     branches:
+#       - master  
+
+# env:
+#   BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
+#   FRONTEND_IMAGE: ${{ secrets.FRONTEND_IMAGE }}
+#   ALERTMANAGER_URL: ${{ secrets.ALERTMANAGER_URL }}
+#   BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v2
+#         id: checkout
+
+#       - name: Print Debug Info - Branch and Commit
+#         run: |
+#           echo "Branch: ${GITHUB_REF#refs/heads/}"
+#           echo "Commit: ${{ github.sha }}"
+#           echo "Current Directory: $(pwd)"
+#           echo "List of files: $(ls -l)"
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v1
+#         id: buildx_setup
+
+#       - name: Install Docker Compose
+#         run: |
+#           echo "Installing Docker Compose..."
+#           sudo apt-get update
+#           sudo apt-get install -y docker-compose
+#           docker-compose --version
+
+#       - name: Build Docker Images with Docker-Compose
+#         run: |
+#           echo "Building Docker images..."
+#           docker-compose -f docker-compose.yaml build || { echo "Docker build failed"; exit 1; }
+
+#       - name: Run Docker-Compose Services
+#         run: |
+#           echo "Starting Docker services..."
+#           docker-compose -f docker-compose.yaml up -d || { echo "Docker Compose up failed"; exit 1; }
+
+#       - name: Wait for Backend to be Ready
+#         run: |
+#           echo "Waiting for Backend to be ready on port $BACKEND_PORT..."
+#           for i in {1..10}; do 
+#             if curl -s -f http://localhost:$BACKEND_PORT; then 
+#               echo "Backend is up and running!"; 
+#               break; 
+#             fi; 
+#             echo "Waiting for Backend to be ready..."; 
+#             sleep 6; 
+#           done || { echo "Backend failed to start"; exit 1; }
+
+#       - name: Upload Build Logs
+#         if: always()
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: build-logs
+#           path: |
+#             ./backend/build.log
+#             ./frontend/build.log
+
+#       - name: Login to Docker Hub
+#         run: |
+#           echo "Logging in to Docker Hub..."
+#           echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin || { echo "Docker login failed"; exit 1; }
+
+#       - name: Push Backend Image to Docker Hub
+#         run: echo "Pushing Backend image to Docker Hub..." && docker push ${{ secrets.BACKEND_IMAGE }} || (echo "Docker push failed" && exit 1)
+        
+#       - name: Push Frontend Image to Docker Hub
+#         run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
+      
+#       - name: Free Up Port 9092
+#         run: |
+#           if lsof -i :9092; then
+#             echo "Stopping process using port 9092"
+#             lsof -i :9092 | awk 'NR!=1 {print $2}' | xargs -r kill -9
+#           fi
+
+#       - name: Cleanup Previous Containers
+#         run: |
+#           docker ps -q --filter "name=alertmanager" | xargs -r docker stop
+#           docker ps -aq --filter "name=alertmanager" | xargs -r docker rm
+
+#       - name: Start Alertmanager
+#         run: |
+#           docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
+
+      
+#       - name: Wait for Alertmanager to be ready
+#         run: |
+#          for i in {1..10}; do 
+#          if curl -s -f http://localhost:9092; then 
+#          echo "Alertmanager is up and running!"; 
+#          break; 
+#            fi; 
+#            echo "Waiting for Alertmanager to be ready..."; 
+#            sleep 6; 
+#            done
+#       # - name: Wait for Alertmanager to be Ready
+#       #   run: |
+#       #     echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
+#       #     for i in {1..10}; do 
+#       #       if curl -s -f http://localhost:${{ secrets.ALERTMANAGER_PORT }}; then 
+#       #         echo "Alertmanager is up and running!"; 
+#       #         break; 
+#       #       fi; 
+#       #       echo "Waiting for Alertmanager to be ready..."; 
+#       #       sleep 6; 
+#       #     done || { echo "Alertmanager failed to start"; exit 1; }
+
+#       # - name: Notify Alertmanager of Build Success
+#       #   run: |
+#       #     echo "Notifying Alertmanager of Build Success..."
+#       #     response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+#       #       {
+#       #         "labels": {
+#       #           "alertname": "BuildSuccess",
+#       #           "severity": "info",
+#       #           "team": "development",
+#       #           "environment": "production"
+#       #         },
+#       #         "annotations": {
+#       #           "summary": "Build Successful",
+#       #           "description": "The latest build was successful."
+#       #         }
+#       #       }
+#       #     ]' ${{ secrets.ALERTMANAGER_URL }})
+          
+#       #     echo "Response Code: $response"
+        
+#       #     if [ "$response" -ne 200 ]; then
+#       #       echo "Failed to notify Alertmanager: HTTP Status $response"
+#       #       exit 1
+#       #     else
+#       #       echo "Successfully notified Alertmanager of build success."
+#       #     fi
+
+#       - name: Notify Alertmanager of Build Success
+#         run: |
+#             response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+#               {
+#                 "labels": {
+#                   "alertname": "BuildSuccess",
+#                   "severity": "info",
+#                   "team": "development",
+#                   "environment": "production"
+#                 },
+#                 "annotations": {
+#                   "summary": "Build Successful",
+#                   "description": "The latest build was successful."
+#                 }
+#               }
+#             ]' http://localhost:9092/api/v2/alerts)
+        
+#             echo "Response Code: $response"
+        
+#             if [ "$response" -ne 200 ]; then
+#               echo "Failed to notify Alertmanager: HTTP Status $response"
+#               exit 1
+#             else
+#               echo "Successfully notified Alertmanager of build success."
+#             fi
+#       - name: Send Email Notification for Build Success
+#         uses: dawidd6/action-send-mail@v3
+#         with:
+#           server_address: smtp.gmail.com
+#           server_port: 587
+#           username: ${{ secrets.EMAIL_USERNAME }}
+#           password: ${{ secrets.EMAIL_PASSWORD }}
+#           subject: "Build Success: CI Pipeline"
+#           body: "The build stage of your CI pipeline completed successfully."
+#           to: kingsamuel412@gmail.com
+#           from: ${{ secrets.EMAIL_USERNAME }}
+
+#   trigger_cd:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Trigger CD Pipeline
+#         run: |
+#           echo "Triggering CD pipeline..."
+#           curl -X POST \
+#             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+#             -d '{"event_type": "start_cd_pipeline"}' \
+#             "https://api.github.com/repos/${{ github.repository }}/dispatches" || { echo "Failed to trigger CD pipeline"; exit 1; }
