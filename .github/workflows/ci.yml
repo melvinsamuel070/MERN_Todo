@@ -196,32 +196,28 @@ jobs:
         
       - name: Push Frontend Image to Docker Hub
         run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
-              
-              # Step 1: Start Alertmanager (If needed)
-      - name: Start Alertmanager
+      
+      - name: Start Alertmanager (If Needed)
         run: |
           echo "Starting Alertmanager..."
-           # Ensure ALERTMANAGER_PORT is a valid port (e.g., 9092)
-           docker run -d -p ${{ secrets.ALERTMANAGER_PORT }}:${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }
-            
-          # Step 2: Wait for Alertmanager to be ready
-      - name: Wait for Alertmanager to be ready
+          docker run -d -p ${{ secrets.ALERTMANAGER_PORT }} --name alertmanager ${{ secrets.ALERTMANAGER_IMAGE }} || { echo "Failed to start Alertmanager"; exit 1; }
+
+      - name: Wait for Alertmanager to be Ready
         run: |
-            echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
-            for i in {1..10}; do 
+          echo "Waiting for Alertmanager to be ready on port ${{ secrets.ALERTMANAGER_PORT }}..."
+          for i in {1..10}; do 
             if curl -s -f http://localhost:${{ secrets.ALERTMANAGER_PORT }}; then 
               echo "Alertmanager is up and running!"; 
               break; 
             fi; 
             echo "Waiting for Alertmanager to be ready..."; 
             sleep 6; 
-            done || { echo "Alertmanager failed to start"; exit 1; }
+          done || { echo "Alertmanager failed to start"; exit 1; }
 
-           # Step 3: Notify Alertmanager of Build Success
       - name: Notify Alertmanager of Build Success
         run: |
-            echo "Sending build success notification to Alertmanager..."
-            response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
+          echo "Notifying Alertmanager of Build Success..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '[
             {
               "labels": {
                 "alertname": "BuildSuccess",
@@ -234,13 +230,16 @@ jobs:
                 "description": "The latest build was successful."
               }
             }
-            ]' http://localhost:${{ secrets.ALERTMANAGER_PORT }}/api/v2/alerts)
-            if [ "$response" != "200" ]; then
-            echo "Failed to notify Alertmanager. Response code: $response"
+          ]' ${{ secrets.ALERTMANAGER_URL }})
+          
+          echo "Response Code: $response"
+        
+          if [ "$response" -ne 200 ]; then
+            echo "Failed to notify Alertmanager: HTTP Status $response"
             exit 1
-            fi
-            echo "Alertmanager notified successfully."
-
+          else
+            echo "Successfully notified Alertmanager of build success."
+          fi
 
       - name: Send Email Notification for Build Success
         uses: dawidd6/action-send-mail@v3
