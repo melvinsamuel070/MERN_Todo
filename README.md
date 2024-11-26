@@ -1,4 +1,4 @@
-# REACT PROJECT
+# REACT PROJECT DOCUMENTATION / README
 
 ---
 
@@ -37,11 +37,30 @@
 - **Cron Jobs** for scheduled tasks.
 - **Stress Testing** for performance evaluation.
 
+
+# Project Description
+---
+## 1. Application Containerization
+### Dockerize the Application
+- **Clone the Repository**: Clone the repository from the provided GitHub link.
+- **Create Dockerfiles**:
+  - Create Dockerfiles for both the frontend (React) and backend (Node.js/Express) to containerize the application.
+  - Optimize the Dockerfiles for production (e.g., multi-stage builds for React, minimal Node.js images).
+### Docker Compose Configuration
+- Write a `docker-compose.yml` file to define services for the backend, frontend, MongoDB, Prometheus, and other necessary components.
+- Set up Docker volumes for MongoDB to ensure data persistence.
+
 ---
 
+## 2. Docker Compose Setup
+### Deploy the Application
+- Use Docker Compose to define and deploy services for the frontend, backend, and MongoDB.
+- Ensure services are defined with clear dependencies and network communication using Docker Compose networks.
+- Create `.env` files to securely manage environment variables and use Docker Secrets for sensitive information like database credentials.
+- Simulate ConfigMaps in Docker Compose using bind mounts to manage application configuration details.
+
 # To start with this project you need to install all the necessary things that are needed
-# First thing to start with:
-- Do `apt-get update -y` and `apt-get upgrade -y`
+- In yuor terminal do `apt-get update -y` and `apt-get upgrade -y`
 
 # Next is to install Docker  
 - Install Docker and Docker Compose. You need to get your installation of Docker from the documentation by typing in your browser:
@@ -130,28 +149,6 @@ Select "Connect your application" and copy the provided connection string.
 9. Test Your Connection
 Use the connection string in your application .env file and in Node.js.
 
-
-# Project Description
-
-## 1. Application Containerization
-### Dockerize the Application
-- **Clone the Repository**: Clone the repository from the provided GitHub link.
-- **Create Dockerfiles**:
-  - Create Dockerfiles for both the frontend (React) and backend (Node.js/Express) to containerize the application.
-  - Optimize the Dockerfiles for production (e.g., multi-stage builds for React, minimal Node.js images).
-### Docker Compose Configuration
-- Write a `docker-compose.yml` file to define services for the backend, frontend, MongoDB, Prometheus, and other necessary components.
-- Set up Docker volumes for MongoDB to ensure data persistence.
-
----
-
-## 2. Docker Compose Setup
-### Deploy the Application
-- Use Docker Compose to define and deploy services for the frontend, backend, and MongoDB.
-- Ensure services are defined with clear dependencies and network communication using Docker Compose networks.
-- Create `.env` files to securely manage environment variables and use Docker Secrets for sensitive information like database credentials.
-- Simulate ConfigMaps in Docker Compose using bind mounts to manage application configuration details.
-
 ---
 
 ## 3. Load Balancing with ELB
@@ -234,9 +231,5 @@ By the end of this project, you will have a fully functional MERN application de
 
 ### **Note**
 This project encourages you to explore other technologies beyond the ones listed in this document as part of your research and problem-solving approach.
-
-
-
-     
 
 

@@ -25,3 +25,6 @@ yarn-error.log*
 todo/*/node_modules/
 /*/node_modules/
 */node_modules/
+
+# variables
+.env

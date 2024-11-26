@@ -1,9 +1,13 @@
-global:
-  resolve_timeout: 5m
-  smtp_require_tls: true  # Ensures TLS encryption for email
-
 route:
+  group_by: ['alertname']
   receiver: email
+  routes:
+    - match:
+        severity: 'critical'
+      receiver: critical-email
+    - match:
+        severity: 'warning'
+      receiver: warning-email
 
 receivers:
   - name: email
@@ -11,12 +15,77 @@ receivers:
       - send_resolved: true
         to: kingsamuel412@gmail.com
         from: melvinsamuel070@gmail.com
-        smarthost: smtp.gmail.com:587  # SMTP server for Gmail (port 587 for TLS)
+        smarthost: smtp.gmail.com:587
         auth_username: melvinsamuel070@gmail.com
-        auth_password: "wetz gzvg rmbm eqqo"  # Your Gmail App password
-        require_tls: true  # TLS for encryption
+        auth_password: "wetz gzvg rmbm eqqo"
+        require_tls: true
         tls_config:
-          insecure_skip_verify: false  # Ensure verification unless you have certificate issues
+          insecure_skip_verify: false
+  - name: critical-email
+    email_configs:
+      - send_resolved: true
+        to: kingsamuel412@gmail.com
+        from: melvinsamuel070@gmail.com
+        smarthost: smtp.gmail.com:587
+        auth_username: melvinsamuel070@gmail.com
+        auth_password: "wetz gzvg rmbm eqqo"
+        require_tls: true
+        tls_config:
+          insecure_skip_verify: false
+  - name: warning-email
+    email_configs:
+      - send_resolved: true
+        to: kingsamuel412@gmail.com
+        from: melvinsamuel070@gmail.com
+        smarthost: smtp.gmail.com:587
+        auth_username: melvinsamuel070@gmail.com
+        auth_password: "wetz gzvg rmbm eqqo"
+        require_tls: true
+        tls_config:
+          insecure_skip_verify: false
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# global:
+#   resolve_timeout: 5m
+#   smtp_require_tls: true  # Ensures TLS encryption for email
+
+# route:
+#   receiver: email
+
+# receivers:
+#   - name: email
+#     email_configs:
+#       - send_resolved: true
+#         to: kingsamuel412@gmail.com
+#         from: melvinsamuel070@gmail.com
+#         smarthost: smtp.gmail.com:587  # SMTP server for Gmail (port 587 for TLS)
+#         auth_username: melvinsamuel070@gmail.com
+#         auth_password: "wetz gzvg rmbm eqqo"  # Your Gmail App password
+#         require_tls: true  # TLS for encryption
+#         tls_config:
+#           insecure_skip_verify: false  # Ensure verification unless you have certificate issues
 
 # global:
 #   resolve_timeout: 5m

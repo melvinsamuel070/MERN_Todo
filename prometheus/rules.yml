@@ -1,62 +1,20 @@
 groups:
-- name: test-alerts
-  rules:
-    # Alert for a generic application instance
-    - alert: InstanceDown
-      expr: up{job="my_app"} == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Instance {{ $labels.instance }} is down"
-        description: "Prometheus has detected that instance {{ $labels.instance }} is down for more than 1 minute."
+  - name: service_health_alerts
+    rules:
+      - alert: FrontendDown
+        expr: up{job="mern_todo-frontend-1"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Frontend service is down"
+          description: "The frontend service has been down for more than 5 minutes."
 
-    # Alert for Prometheus instance
-    - alert: PrometheusDown
-      expr: up{job="mern_todo_app-prometheus-1"} == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Prometheus instance is down"
-        description: "Prometheus at {{ $labels.instance }} has been down for more than 1 minute."
-
-    # Alert for Node Exporter
-    - alert: NodeExporterDown
-      expr: up{job="mern_todo_app-node-exporter-1"} == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Node Exporter instance is down"
-        description: "Node Exporter at {{ $labels.instance }} has been down for more than 1 minute."
-
-    # Alert for Backend application
-    - alert: BackendDown
-      expr: up{job="mern_todo_app-backend-1"} == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Backend instance is down"
-        description: "Backend at {{ $labels.instance }} has been down for more than 1 minute."
-
-    # Alert for MongoDB Exporter
-    - alert: MongoExporterDown
-      expr: up{job="mern_todo_app-mongo-exporter-1"} == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "MongoDB Exporter is down"
-        description: "MongoDB Exporter at {{ $labels.instance }} has been down for more than 1 minute."
-
-    # Test alert for checking email notifications
-    - alert: TestAlert
-      expr: vector(1)  # This will always trigger
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: "Test Alert"
-        description: "This is a test alert to check email notifications."
+      - alert: BackendDown
+        expr: up{job="mern_todo-backend-1"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend service is down"
+          description: "The backend service has been down for more than 5 minutes."

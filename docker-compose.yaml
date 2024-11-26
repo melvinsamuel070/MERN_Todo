@@ -1,3 +1,184 @@
+# services:
+#   # mongo:
+#   #   image: mongo  # Use the official MongoDB image
+#   #   restart: always
+#   #   environment:
+#   #     - MONGO_INITDB_ROOT_USERNAME  # Root username for MongoDB
+#   #     - MONGO_INITDB_ROOT_PASSWORD  # Root password for MongoDB
+#   #   volumes:
+#   #     - mongo_data:/data/db  # Persist MongoDB data
+#   #   networks:
+#   #     - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure MongoDB is on the same network
+
+#   backend:
+#   image: melvinsamuel070/backend:latest
+#   build:
+#     context: ./backend
+#     dockerfile: Dockerfile
+#   ports:
+#     - "3500:3500"
+#   environment:
+#     - DB_URL=${DB_URL}
+#     - PORT=${PORT}
+#     - HEALTH_CHECK_URL=${HEALTH_CHECK_URL}  # Pass the health check URL as an environment variable
+#   volumes:
+#     - backend_data:/app/data
+#   restart: always
+#   networks:
+#     - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+#   healthcheck:
+#     test: ["CMD", "curl", "-f", "${HEALTH_CHECK_URL}"]  # Use the environment variable in the health check
+#     interval: 30s
+#     timeout: 10s
+#     retries: 3
+#     start_period: 5s
+
+# frontend:
+#   image: melvinsamuel070/frontend1:latest
+#   build:
+#     context: ./frontend
+#     dockerfile: Dockerfile
+#   ports:
+#     - "3000:3000"
+#   depends_on:
+#     - backend
+#   restart: always
+#   networks:
+#     - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+#   healthcheck:
+#   test: ["CMD", "curl", "-f", "${HEALTH_CHECK_URL}"]  # Or replace with a static health check URL
+#   interval: 30s
+#   timeout: 10s
+#   retries: 3
+#   start_period: 5s
+
+
+
+
+#   # mongo-exporter:
+#   #   image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
+#   #   environment:
+#   #     - MONGODB_URI=mongodb://root:password@mongo:27017/admin  # Connection string for MongoDB
+#   #   depends_on:
+#   #     - mongo
+#   #   networks:
+#   #     - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+#   prometheus:
+#     image: prom/prometheus:v2.45.3
+#     restart: unless-stopped
+#     volumes:
+#       - ./prometheus/:/etc/prometheus/
+#     command:
+#       - --web.enable-remote-write-receiver
+#       - --config.file=/etc/prometheus/prometheus.yml
+#     ports:
+#       - "9090:9090"
+#     networks:
+#       - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
+
+#   pushgateway:
+#     image: prom/pushgateway:latest  # Pushgateway image
+#     ports:
+#       - '9091:9091'  # Expose Pushgateway's port
+#     restart: always
+#     networks:
+#       - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network 
+
+#   node-exporter:
+#     image: prom/node-exporter:v1.7.0
+#     restart: unless-stopped
+#     volumes:
+#       - /proc:/host/proc:ro
+#       - /sys:/host/sys:ro
+#       - /:/rootfs:ro
+#     command:
+#       - '--path.procfs=/host/proc'
+#       - '--path.rootfs=/rootfs'
+#       - '--path.sysfs=/host/sys'
+#       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+#     ports:
+#       - "9100:9100"
+#     networks:
+#       - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Node Exporter is on the same network
+
+#   alertmanager:
+#     image: prom/alertmanager:v0.27.0
+#     restart: unless-stopped
+#     ports:
+#       - "9092:9093"  # Map port 9093 for Alertmanager access
+#     volumes:
+#       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+#     networks:
+#       - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+#   grafana:
+#     image: grafana/grafana:latest
+#     container_name: grafana
+#     ports:
+#       - "3001:3000"
+#     volumes:
+#       - grafana-data:/var/lib/grafana
+#     restart: unless-stopped
+#     networks:
+#       - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Grafana is on the same network
+
+#   portainer:
+#     image: portainer/portainer-ce:latest
+#     container_name: portainer
+#     command: -H unix:///var/run/docker.sock
+#     volumes:
+#       - /var/run/docker.sock:/var/run/docker.sock  # Access Docker socket
+#       - portainer_data:/data  # Portainer data storage
+#     ports:
+#       - "9000:9000"  # Portainer UI access
+#     restart: unless-stopped
+#     networks:
+#       - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+#   watchtower:
+#     image: containrrr/watchtower
+#     container_name: watchtower
+#     restart: always
+#     volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock  # Required to monitor running containers
+#     command: --interval 60  # Check for updates every 60 seconds
+#     networks:
+#      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+# networks:
+#   mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
+#     driver: bridge
+
+# volumes:
+#   backend_data:
+#   # mongo_data:  # Add a volume for MongoDB
+#   grafana-data:  # Add a volume for Grafana
+#   portainer_data:  # Add a volume for Portainer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 services:
   # mongo:
   #   image: mongo  # Use the official MongoDB image
@@ -11,33 +192,47 @@ services:
   #     - mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure MongoDB is on the same network
 
   backend:
-    image: melvinsamuel070/backend:latest  # Replace with your actual backend image name
+    image: melvinsamuel070/backend:latest
     build:
-      context: ./backend  # Path to your backend Dockerfile
+      context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3500:3500"  # Map the backend port to the host
+      - "3500:3500"
     environment:
       - DB_URL=${DB_URL}
       - PORT=${PORT}
+      # - HEALTH_CHECK_URL=${HEALTH_CHECK_URL}  # Pass the health check URL as an environment variable
     volumes:
-      - backend_data:/app/data  # Optional for backend data persistence
+      - backend_data:/app/data
+    restart: always
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
-    
-    # depends_on:
-    #   - mongo  # Ensure MongoDB starts before the backend
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "${HEALTH_CHECK_URL}"]  # Use the environment variable in the health check
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+
   frontend:
-    image: melvinsamuel070/frontend1:latest  # Replace with your actual frontend image name
+    image: melvinsamuel070/frontend1:latest
     build:
-      context: ./frontend  # Path to your frontend Dockerfile
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"  # Map the frontend port to the host
+      - "3000:3000"
     depends_on:
-      - backend  # Ensure the backend starts before the frontend
+      - backend
+    restart: always
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "${HEALTH_CHECK_URL}"]  # Or replace with a static health check URL
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+
   # mongo-exporter:
   #   image: bitnami/mongodb-exporter:latest  # MongoDB Exporter for Prometheus
   #   environment:
@@ -46,6 +241,7 @@ services:
   #     - mongo
   #   networks:
   #     - mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
   prometheus:
     image: prom/prometheus:v2.45.3
     restart: unless-stopped
@@ -57,7 +253,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Prometheus is on the same network
 
   pushgateway:
     image: prom/pushgateway:latest  # Pushgateway image
@@ -65,7 +261,7 @@ services:
       - '9091:9091'  # Expose Pushgateway's port
     restart: always
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network 
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network 
 
   node-exporter:
     image: prom/node-exporter:v1.7.0
@@ -82,7 +278,7 @@ services:
     ports:
       - "9100:9100"
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Node Exporter is on the same network
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Node Exporter is on the same network
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
@@ -92,8 +288,7 @@ services:
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
-
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
 
   grafana:
     image: grafana/grafana:latest
@@ -104,7 +299,7 @@ services:
       - grafana-data:/var/lib/grafana
     restart: unless-stopped
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Grafana is on the same network
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network # Ensure Grafana is on the same network
 
   portainer:
     image: portainer/portainer-ce:latest
@@ -117,12 +312,21 @@ services:
       - "9000:9000"  # Portainer UI access
     restart: unless-stopped
     networks:
-      - mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+      - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
+
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   container_name: watchtower
+  #   restart: always
+  #   volumes:
+  #    - /var/run/docker.sock:/var/run/docker.sock  # Required to monitor running containers
+  #   command: --interval 60  # Check for updates every 60 seconds
+  #   networks:
+  #    - mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network
 
 networks:
-  mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
+  mern_todo_mern_todo_mern_todo_app_mern_todo_app_mern_todo_app_napa-network:
     driver: bridge
-
 
 volumes:
   backend_data:
