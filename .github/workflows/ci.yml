@@ -150,7 +150,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
         id: buildx_setup
 
-      - name: Build Docker Images with Docker-Compose
+      - name: Build Docker Images with Docker-Compose.yaml
         run: |
           echo "Building Docker images..."
           docker-compose -f docker-compose.yaml build || { echo "Docker build failed"; exit 1; }
