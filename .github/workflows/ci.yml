@@ -194,9 +194,9 @@ jobs:
       - name: Push Backend Image to Docker Hub
         run: echo "Pushing Backend image to Docker Hub..." && docker push ${{ secrets.BACKEND_IMAGE }} || (echo "Docker push failed" && exit 1)
         
-      - name: Push Backend Image to Docker Hub
-        run: echo "Pushing Backend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push failed" && exit 1)
-        
+      - name: Push Frontend Image to Docker Hub
+        run: echo "Pushing Frontend image to Docker Hub..." && docker push ${{ secrets.FRONTEND_IMAGE }} || (echo "Docker push for Frontend failed" && exit 1)
+      
       - name: Start Alertmanager (If Needed)
         run: |
           echo "Starting Alertmanager..."
