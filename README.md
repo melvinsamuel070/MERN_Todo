@@ -2,8 +2,9 @@
 # REACT PROJECT DOCUMENTATION / README
 
 
--This project demonstrates the containerization, orchestration, and deployment of a MERN (MongoDB, Express, React, Node.js) Todo   -application using Docker, Docker Compose, and AWS. It also integrates monitoring, CI/CD pipelines, and scaling mechanisms to ensure   -robust application performance.
-
+# Project Overview
+- This project demonstrates the containerization, orchestration, and deployment of a MERN (MongoDB, Express, React, Node.js) Todo    application using Docker, Docker Compose, and AWS.  
+- It also integrates monitoring, CI/CD pipelines, and scaling mechanisms to ensure robust application performance.
 ---
 
 ## **Table of Contents**
@@ -846,7 +847,7 @@ Feel free to reach out with any questions or suggestions! 😊
 
 
 
-<!-- Dockerized MERN Todo App with CI/CD and Load Balancing
+<!-- <!-- Dockerized MERN Todo App with CI/CD and Load Balancing
 This project demonstrates the containerization, orchestration, and deployment of a MERN (MongoDB, Express, React, Node.js) Todo application using Docker, Docker Compose, and AWS. It also integrates monitoring, CI/CD pipelines, and scaling mechanisms to ensure robust application performance.
 
 Table of Contents
@@ -1127,209 +1128,6 @@ Feel free to reach out with any questions or suggestions! 😊 -->
 
 
 
-
-
-
-
-
-# **MERN Todo Application Deployment Guide**
-
----
-
-## **Table of Contents**
-1. [Technology Stack](#technology-stack)
-2. [Monitoring Setup](#monitoring-setup)
-3. [Project Setup and Deployment](#project-setup-and-deployment)
-    - [Prerequisites](#prerequisites)
-    - [Application Containerization](#application-containerization)
-    - [Load Balancing with ELB](#load-balancing-with-elb)
-    - [Networking and Data Persistence](#networking-and-data-persistence)
-    - [Secure Ingress with SSL](#secure-ingress-with-ssl)
-4. [CI/CD Pipeline](#ci/cd-pipeline)
-5. [Auto-Scaling and Alerting](#auto-scaling-and-alerting)
-6. [Documentation and Troubleshooting](#documentation-and-troubleshooting)
-7. [Expected Outcome](#expected-outcome)
-8. [Notes](#notes)
-
----
-
-## **Technology Stack**
-
-### **Core Technologies**
-- **Frontend**: React
-- **Backend**: Node.js/Express
-- **Database**: MongoDB (containerized)
-
-### **Infrastructure Tools**
-- **Docker Compose**: Orchestration of containerized services.
-- **Nginx**: Reverse proxy setup.
-- **Certbot**: SSL certificate generation.
-- **AWS Route 53**: DNS management.
-- **Application Load Balancer (ALB)**: Path-based routing and load balancing.
-- **GitHub Actions**: CI/CD pipeline automation.
-
-### **Monitoring Tools**
-- **Prometheus**: Metrics collection and monitoring.
-- **AlertManager**: Alerts for performance issues.
-- **Grafana**: Visualization of metrics.
-- **Pushgateway**: Facilitates custom metric pushes.
-- **Portainer**: Real-time container management.
-
-### **Security and Persistence**
-- **Docker Secrets**: Secure configuration management.
-- **Docker Volumes**: Ensures data persistence.
-
----
-
-## **Monitoring Setup**
-1. **Prometheus**: Deployed using Docker Compose to scrape and store metrics from the backend, frontend, and MongoDB services.
-2. **AlertManager**: Configured to trigger alerts based on resource thresholds.
-3. **Grafana**: Provides a user-friendly interface to visualize data from Prometheus.
-4. **Pushgateway**: Used for collecting custom application metrics.
-
----
-
-## **Project Setup and Deployment**
-
-### **Prerequisites**
-- **System Requirements**:
-  - Ubuntu 22.04 or any compatible Linux distribution.
-  - Minimum 4 GB RAM, 2 vCPUs, and 50 GB storage.
-- **Installations**:
-  - Update system packages:
-    ```bash
-    sudo apt-get update -y && sudo apt-get upgrade -y
-    ```
-  - Install Docker and Docker Compose:
-    Follow the [official Docker documentation](https://docs.docker.com/get-docker/) for installation.
-  - Install Nginx:
-    ```bash
-    sudo apt-get install nginx -y
-    ```
-
----
-
-### **Application Containerization**
-#### **Dockerize the Application**
-1. Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd <repository-name>
-    Build Docker Images
-    ```
-2. Create **Dockerfiles**:
-   - Frontend:
-     - Use a multi-stage build process for optimal performance.
-   - Backend:
-     - Base image: Lightweight Node.js.
-
-3. Write `docker-compose.yml`:
-   - Define services:
-     - Frontend
-     - Backend
-     - MongoDB
-     - Prometheus
-     - AlertManager
-     - Grafana
-   - Configure **Docker volumes** for MongoDB data persistence.
-   - Use Docker networks for inter-service communication.
-
-#### **Service Setup**
-1. **Backend**:
-   - Install dependencies:
-     ```bash
-     cd backend
-     npm install
-     npm start
-     ```
-   - Build Docker image:
-     ```bash
-     docker build -t <backend-image-name> .
-     ```
-2. **Frontend**:
-   - Install dependencies:
-     ```bash
-     cd frontend
-     npm install
-     npm run build
-     npm start
-     ```
-   - Build Docker image:
-     ```bash
-     docker build -t <frontend-image-name> .
-     ```
-
----
-
-### **Load Balancing with ELB**
-1. Create an **Application Load Balancer** in AWS.
-2. Configure **path-based routing**:
-   - `/backend` -> Backend service
-   - `/frontend` -> Frontend service
-3. Set up health checks for both services to ensure high availability.
-
----
-
-### **Networking and Data Persistence**
-1. **Docker Networking**:
-   - Use a custom bridge network to allow container communication.
-2. **Data Persistence**:
-   - Attach Docker volumes for MongoDB to ensure data is not lost on container restarts.
-
----
-
-### **Secure Ingress with SSL**
-1. **Generate SSL Certificates**:
-   - Use Certbot for free SSL certificates.
-     ```bash
-     sudo certbot --nginx
-     ```
-2. **Integrate with ELB**:
-   - Upload SSL certificates to AWS Certificate Manager.
-   - Attach certificates to the ELB.
-
----
-
-## **CI/CD Pipeline**
-1. Set up GitHub Actions workflows:
-   - Build and test Docker images.
-   - Push images to a container registry (e.g., Docker Hub).
-   - Pull and deploy updated images on the production server.
-2. Automate ALB configuration updates to handle dynamic changes.
-
----
-
-## **Auto-Scaling and Alerting**
-1. Configure Prometheus to monitor resource usage:
-   - CPU, memory, and disk space.
-2. Set up AlertManager to notify when thresholds are breached.
-3. Implement auto-scaling policies:
-   - Increase the number of replicas for services dynamically based on load.
-
----
-
-## **Documentation and Troubleshooting**
-- Include detailed steps for:
-  - Setting up the application on a new environment.
-  - Resolving common issues like failed builds or service unavailability.
-- Use Grafana dashboards to identify performance bottlenecks.
-
----
-
-## **Expected Outcome**
-By following this guide, you will achieve:
-1. A fully functional MERN Todo application, containerized using Docker.
-2. Continuous delivery with GitHub Actions.
-3. Secure access through SSL with traffic managed by an ELB.
-4. Comprehensive monitoring and alerting with Prometheus, Grafana, and AlertManager.
-5. Scalable architecture with automated resource allocation.
-
----
-
-## **Notes**
-- **Environment Variables**:
-  - Ensure all necessary `.env` files are created before deploying.
-- This project encourages exploration of additional tools and techniques to improve the deployment process.
 
 
 
