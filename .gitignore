@@ -26,8 +26,12 @@ todo/*/node_modules/
 /*/node_modules/
 */node_modules/
 
-# variables
- /.env
-/backend/.env
+
+# Ignore the .env file in the backend directory
+   backend/.env
+
+# Ignore the .env file in the main directory
+ .env
+
 
 
