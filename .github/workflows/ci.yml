@@ -123,7 +123,7 @@ name: ci
 on:
   push:
     branches:
-      - main  # You can change this to a different branch if needed
+      - master  # You can change this to a different branch if needed
 
 jobs:
   setup-eksctl:
@@ -134,7 +134,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup eksctl
-        uses: your-username/eksctl-action@v1  # Replace with the correct action reference
+        uses: melvinsamuel070/eksctl-action@v1  # Replace with the correct action reference
         with:
           eksctl_url: 'https://github.com/weaveworks/eksctl/releases/download/v0.140.0/eksctl_Linux_amd64.zip'  # Replace with your actual eksctl URL
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # AWS Access Key (you'll need to add this in your repo secrets)
