@@ -32,6 +32,3 @@ todo/*/node_modules/
 
 # Ignore the .env file in the main directory
  MERN_Todo/.env
-
-
-

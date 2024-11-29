@@ -1,0 +1,157 @@
+
+
+# services:
+#   # Frontend Service
+#   frontend:
+#     image: melvinsamuel070/frontend1:latest
+#     environment:
+#       - REACT_APP_BACKEND_URL=http://backend:3500  # Backend service URL
+#     ports:
+#       - "3000:3000"
+#     networks:
+#       - mern_network
+
+#   # Backend Service
+#   backend:
+#     image: melvinsamuel070/backend:latest
+#     environment:
+#       - DB_URL=${DB_URL}
+#       - PORT=${PORT}
+#     networks:
+#       - mern_network
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:3500/health"]
+#       interval: 30s
+#       retries: 3
+
+#   nginx:
+#   image: nginx:latest
+#   volumes:
+#     - ./nginx.conf:/etc/nginx/nginx.conf  # Mount custom Nginx configuration file
+#     - ./frontend/build:/usr/share/nginx/html  # Mount React build directory
+#   ports:
+#     - "8080:80"  # Expose Nginx on port 8080
+#   networks:
+#     - mern_network
+#   depends_on:
+#     - frontend
+#     - backend
+
+
+# networks:
+#   mern_network:
+#     driver: bridge
+
+
+
+
+
+
+
+
+
+
+# services:
+#   # Frontend Service
+#   frontend:
+#     image: melvinsamuel070/frontend1:latest
+#     environment:
+#       - REACT_APP_BACKEND_URL=http://backend:3500  # Backend service URL
+#     ports:
+#       - "3000:3000"
+#     networks:
+#       - mern_network
+#     restart: always
+
+#   # Backend Service
+#   backend:
+#     image: melvinsamuel070/backend:latest
+#     environment:
+#       - DB_URL=${DB_URL}
+#       - PORT=${PORT}
+#     networks:
+#       - mern_network
+#     restart: always
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:3500/health"]
+#       interval: 30s
+#       retries: 3
+
+#   # Nginx Service
+#   nginx:
+#     image: nginx:latest
+#     volumes:
+#       - ./nginx.conf:/etc/nginx/nginx.conf  # Mount custom Nginx configuration file
+#       - ../frontend/build:/usr/share/nginx/html  # Mount React build directory (use relative path to frontend)
+#     ports:
+#       - "8080:80"  # Expose Nginx on port 8080
+#     networks:
+#       - mern_network
+#     restart: always
+#     depends_on:
+#       - frontend
+#       - backend
+
+# networks:
+#   mern_network:
+#     driver: bridge
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+services:
+  # Frontend Service
+  frontend:
+    image: melvinsamuel070/frontend1:latest
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend:3500
+    ports:
+      - "3000:3000"
+    networks:
+      - mern_network
+    restart: always
+
+  # Backend Service
+  backend:
+    image: melvinsamuel070/backend:latest
+    environment:
+      - DB_URL=${DB_URL}
+      - PORT=${PORT}
+    networks:
+      - mern_network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3500/health"]
+      interval: 30s
+      retries: 3
+
+  # Nginx Service
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Mount custom Nginx config file
+      - ../frontend/build:/usr/share/nginx/html  # Fix the path here to the correct build directory
+    ports:
+      - "8080:80"  # Expose Nginx on port 8080
+    networks:
+      - mern_network
+    restart: always
+    depends_on:
+      - frontend
+      - backend
+
+networks:
+  mern_network:
+    driver: bridge
