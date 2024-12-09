@@ -63,7 +63,7 @@ jobs:
       # Step 8: Install Docker and Dependencies on EC2 Instance
       - name: Install Docker and Dependencies on EC2 Instance
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'
             set -x
             sudo apt-get update
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
@@ -73,26 +73,17 @@ jobs:
             echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || \
-              (curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh)
+            (curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh)
             sudo systemctl enable docker
             sudo systemctl start docker
             sudo usermod -aG docker $USER
-          EOF
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+           docker-compose --version
+            sudo apt-get install npm -y    docker-compose up -d
 
-      # Step 9: Install Docker Compose
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
-      - name: npm install
-        run: sudo apt-get install npm -y    
-
-      # Step 13: Start application-specific services using Docker Compose
-      - name: Start application services
-        run: docker-compose up -d
-        
+            '
+         
 
               # Step 14: Deploy to EC2
       - name: Deploy to EC2
@@ -111,12 +102,12 @@ jobs:
               '
 
               # Sync required files to EC2 instance
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
               scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
               wait
 
@@ -272,7 +263,7 @@ jobs:
       
             # Disable debugging mode
             set +x
-            '
+          ,
         continue-on-error: false
           
           
@@ -344,8 +335,11 @@ jobs:
           to: kingsamuel412@gmail.com
           from: ${{ secrets.EMAIL_USERNAME }}
 
-
-
+      - name: cleanup docker images and containers
+        run: |    
+          docker stop $(docker ps -a -q)
+          docker rm $(docker ps -a -q)
+          docker rmi $(docker images -q)
 
 
 
