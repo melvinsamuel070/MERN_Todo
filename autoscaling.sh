@@ -271,6 +271,7 @@
 #!/bin/bash
 
 # Enable debugging and set error handling
+set -e
 set -x
 trap 'echo "Error on line $LINENO"; exit 1' ERR
 

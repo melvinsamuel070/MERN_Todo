@@ -58,7 +58,7 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-app.get("/todo", async (req, res) => {
+app.get("/todo/api", async (req, res) => {
   try {
     const todo = await Todo.find();
     let orderedTodos = [];
