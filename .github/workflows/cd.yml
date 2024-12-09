@@ -402,14 +402,9 @@ jobs:
       # Step 7: Test SSH Connection
       - name: Test SSH Connection
         run: |
-          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
-        env:
-          INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
-
-      # Step 8: Install Docker and Dependencies on EC2 Instance
-      - name: Install Docker and Dependencies on EC2 Instance
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
+         env:
+         SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+           echo ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'
             set -x
             sudo apt-get update
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
@@ -423,19 +418,13 @@ jobs:
             sudo systemctl enable docker
             sudo systemctl start docker
             sudo usermod -aG docker $USER
-          EOF
-      # Step 9: Install Docker Compose
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-      - name: npm install
-        run: sudo apt-get install npm -y    
-
-      # Step 13: Start application-specific services using Docker Compose
-      - name: Start application services
-        run: docker-compose up -d
+           sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+           sudo chmod +x /usr/local/bin/docker-compose
+            docker-compose --version
+            sudo apt-get install npm -y    
+            docker-compose up -d
+            
+            '
         
 
               # Step 14: Deploy to EC2
