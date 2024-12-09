@@ -30,7 +30,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y awscli
-
       # Step 4: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -45,14 +44,12 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region ${{ secrets.AWS_REGION }}
-
       # Step 6: Set up SSH Key
       - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
       # Step 7: Test SSH Connection
       - name: Test SSH Connection
         run: |
@@ -63,7 +60,7 @@ jobs:
       # Step 8: Install Docker and Dependencies on EC2 Instance
       - name: Install Docker and Dependencies on EC2 Instance
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
             set -x
             sudo apt-get update
             sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
@@ -73,24 +70,31 @@ jobs:
             echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || \
-            (curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh)
+              (curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh)
             sudo systemctl enable docker
             sudo systemctl start docker
             sudo usermod -aG docker $USER
-            sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-           docker-compose --version
-            sudo apt-get install npm -y    docker-compose up -d
+          EOF
+      # Step 9: Install Docker Compose
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+      - name: npm install
+        run: sudo apt-get install npm -y    
 
-            '
-         
+      # Step 13: Start application-specific services using Docker Compose
+      - name: Start application services
+        run: docker-compose up -d
+        
 
               # Step 14: Deploy to EC2
       - name: Deploy to EC2
         env:
           EC2_USER: "ubuntu"
         run: |
-              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }}'
+              ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
               PROJECT_DIR="/home/ubuntu/MERN_Todo"
               if [ ! -d "$PROJECT_DIR" ]; then
               echo "Creating project directory..."
@@ -98,19 +102,17 @@ jobs:
               else
               echo "Project directory already exists."
               fi
-              
-              '
-
+              EOF
               # Sync required files to EC2 instance
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
               wait
-      # Step 6: Set Environment Variables for Deployment
+              # Step 6: Set Environment Variables for Deployment
       - name: Set Environment Variables
         env:
          BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
@@ -121,22 +123,23 @@ jobs:
           echo "Backend Image: $BACKEND_IMAGE"
           echo "Frontend Image: $FRONTEND_IMAGE"
           echo "Alertmanager URL: $ALERTMANAGER_URL"
-
         # Step 7: Deploy and Run Containers
       - name: Deploy and Run Containers
         env:
          INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << '
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$INSTANCE_IP << 'EOF'
           set -e
           # Install Docker Compose if not already installed
            if ! command -v docker-compose &> /dev/null; then
            sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -Po '"tag_name": "\K.*\d')" -o /usr/local/bin/docker-compose
            sudo chmod +x /usr/local/bin/docker-compose
            fi
+          # Navigate to the application directory and run Docker Compose with increased memory
            cd /home/ubuntu/MERN_Todo
            NODE_OPTIONS=--max-old-space-size=4096 sudo docker compose up -d 
+          # Verify running containers
             RUNNING_CONTAINERS=$(sudo docker ps --filter "status=running" --format "{{.Names}}")
             REQUIRED_CONTAINERS="${REQUIRED_CONTAINERS}"
             for container in $REQUIRED_CONTAINERS; do
@@ -147,15 +150,13 @@ jobs:
             done
             echo "All required containers are running."
           EOF
-
       # Step 8: Notify Success
       - name: Notify Success
         run: echo "Deployment completed successfully, and all containers are running."
              # Step 9: Deploy and Configure Instanc
       - name: Deploy and Configure Instance
         run: |
-                 ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }}'
-                 set -e
+                 ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
                  set -x
                  trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
                  # Run dpkg configuration
@@ -174,11 +175,11 @@ jobs:
                  sudo nginx -t
                  # Reload Nginx service to apply changes
                  sudo systemctl reload nginx
-                 '
+                 EOF
            
       - name: Configure Nginx Reverse Proxy
         run: |
-         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'
+         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
          DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
          FRONTEND_PORT="${{ secrets.FRONTEND_PORT }}"
          BACKEND_PORT="${{ secrets.BACKEND_PORT }}"
@@ -194,26 +195,24 @@ jobs:
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             }
-            location /todo/ {
+            location /api/ {
                 proxy_pass http://${{ secrets.INSTANCE_IP }}:$BACKEND_PORT;
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             }
          }
-         '
+         EOL
          # Test and reload Nginx
          sudo nginx -t
          sudo systemctl reload nginx
-         
-
+         EOF
         # Step 12: Start Docker Compose on EC2 with Debugging
       - name: Start Docker Compose on EC2 with Debugging
         run: |
-          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'
+          ssh -o StrictHostKeyChecking=no -i "/home/ubuntu/.ssh/id_rsa" ubuntu@${{ secrets.INSTANCE_IP }} <<'EOF'
             # Enable debugging mode
             set -x
-            set -e
       
             # Trap errors and exit with a message
             trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
@@ -257,7 +256,7 @@ jobs:
       
             # Disable debugging mode
             set +x
-          ,
+          EOF
         continue-on-error: false
           
           
@@ -265,24 +264,20 @@ jobs:
         run: |
           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"start\"} 1\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-
       - name: Deploy application
         run: |
           echo "Starting application deployment..."
           docker compose up -d
           echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-
       - name: Notify Pushgateway about pipeline progress (deployment in progress)
         run: |
           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment\"} 1\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-
       - name: Notify Pushgateway about pipeline progress (configure AWS credentials)
         run: |
           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"configure_aws_credentials\"} 1\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-
       - name: Configure AWS credentials
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -291,18 +286,15 @@ jobs:
           echo "Configuring AWS credentials..."
           aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
           aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-
       - name: Notify Pushgateway about pipeline completion
         run: |
           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment_complete\"} 1\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-
       - name: Notify Pushgateway about failure (if any)
         if: failure()
         run: |
           echo -e "push_failure_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} 1\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-
        
       - name: Final Cleanup
         run: |
@@ -328,12 +320,6 @@ jobs:
           body: "The deployment of your application completed successfully."
           to: kingsamuel412@gmail.com
           from: ${{ secrets.EMAIL_USERNAME }}
-
-      - name: cleanup docker images and containers
-        run: |    
-          docker stop $(docker ps -a -q)
-          docker rm $(docker ps -a -q)
-          docker rmi $(docker images -q)
 
 
 
