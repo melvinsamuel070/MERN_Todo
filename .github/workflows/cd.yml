@@ -102,13 +102,13 @@ jobs:
               '
 
               # Sync required files to EC2 instance
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo &&
-              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yaml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r frontend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
+              scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/
               wait
 
               # Step 6: Set Environment Variables for Deployment
