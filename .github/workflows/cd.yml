@@ -575,14 +575,7 @@ jobs:
         run: |
           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"configure_aws_credentials\"} 1\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-      - name: Configure AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          echo "Configuring AWS credentials..."
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+      
       - name: Notify Pushgateway about pipeline completion
         run: |
           echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment_complete\"} 1\n" | \
