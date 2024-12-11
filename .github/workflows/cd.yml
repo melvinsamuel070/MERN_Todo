@@ -528,7 +528,7 @@ jobs:
          BACKEND_PORT="${{ secrets.BACKEND_PORT }}"
          echo "Configuring Nginx for domain: $DOMAIN_NAME"
          # Write Nginx configuration
-         sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+         sudo tee /etc/nginx/sites-available/default > /dev/null 
          server {
             listen 80;
             server_name $DOMAIN_NAME;
@@ -545,11 +545,11 @@ jobs:
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             }
          }
-         EOL
+         
          # Test and reload Nginx
          sudo nginx -t
          sudo systemctl reload nginx
-         EOF
+         
           
       - name: Notify Pushgateway about pipeline progress (start)
         run: |
