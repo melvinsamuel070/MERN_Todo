@@ -425,14 +425,14 @@ jobs:
             sudo usermod -aG docker $USER
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
-            docker-compose --version
-            sudo apt-get install npm -y    
+            docker-compose --version  
             docker-compose up -d
+            sudo apt-get install npm -y 
 
           EOF
         
 
-              # Step 14: Deploy to EC2
+       # Step 5: Deploy to EC2
       - name: Deploy to EC2
         env:
           EC2_USER: "ubuntu"
@@ -446,7 +446,10 @@ jobs:
               echo "Project directory already exists."
               fi
               EOF
-              # Sync required files to EC2 instance
+
+      - name: Sync files to EC2 instance
+        run: |
+            # Sync required files to EC2 instance
               scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r alertmanager $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
               scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r backend $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
               scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa bash.sh $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
@@ -455,8 +458,9 @@ jobs:
               scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r prometheus $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
               scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa prometheus.yml $EC2_USER@${{ secrets.INSTANCE_IP }}:/home/ubuntu/MERN_Todo/ &
               wait
-              # Step 6: Set Environment Variables for Deployment
-      - name: Set Environment Variables
+
+       # Step 6: Set Environment Variables for Deployment
+      - name: Setting up an environment
         env:
          BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
          FRONTEND_IMAGE: ${{ secrets.FRONTEND_IMAGE }}
@@ -546,57 +550,6 @@ jobs:
          sudo nginx -t
          sudo systemctl reload nginx
          EOF
-        # Step 12: Start Docker Compose on EC2 with Debugging
-      - name: Start Docker Compose on EC2 with Debugging
-        run: |
-            set -x
-      
-            # Trap errors and exit with a message
-            trap 'echo "Error occurred at line $LINENO"; exit 1' ERR
-      
-            # Resolve dpkg lock issues
-            for lock in /var/lib/apt/lists/lock /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend; do
-              if sudo lsof $lock &> /dev/null; then
-                echo "Lock $lock is held. Killing process..."
-                sudo kill $(sudo lsof -t $lock) || true
-                sudo rm -f $lock
-              fi
-            done
-      
-            # Reconfigure dpkg and update apt cache
-            sudo dpkg --configure -a || true
-            sudo apt-get install -f -y || true
-            sudo apt-get update -y
-      
-            # Ensure the system is upgraded to avoid dependency issues
-            sudo apt-get upgrade -y || true
-      
-            # Install Docker if not installed
-            if ! command -v docker &> /dev/null; then
-              echo "Docker not found, installing..."
-              sudo apt-get install -y docker.io
-            else
-              echo "Docker is already installed."
-            fi
-      
-            # Install Docker Compose if not installed
-            if ! command -v docker-compose &> /dev/null; then
-              echo "Docker Compose not found, installing..."
-              sudo apt-get install -y docker-compose
-            else
-              echo "Docker Compose is already installed."
-            fi
-      
-            # Navigate to project directory and start Docker Compose
-            cd /home/ubuntu/MERN_Todo
-            sudo docker compose up -d || { echo "Failed to start Docker Compose"; exit 1; }
-      
-            # Disable debugging mode
-            set +x
-      
-             echo "Docker Compose started successfully." 
-        continue-on-error: false
-          
           
       - name: Notify Pushgateway about pipeline progress (start)
         run: |
