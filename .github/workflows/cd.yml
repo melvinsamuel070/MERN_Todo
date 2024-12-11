@@ -519,7 +519,7 @@ jobs:
            sudo nginx -t
           # Reload Nginx service to apply changes
            sudo systemctl reload nginx
-         EOF
+        
            
       - name: Configure Nginx Reverse Proxy
         run: |
