@@ -164,14 +164,15 @@ jobs:
         # Step 2: Run Tests
       - name: Install Backend Dependencies and Run Tests
         run: |
+          npm install
           npm test
         working-directory: ./backend
 
       - name: Install Frontend Dependencies and Run Tests
         run: |
+          npm install
           npm test
         working-directory: ./frontend
-
 
       - name: Start Alertmanager
         run: |
