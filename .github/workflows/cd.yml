@@ -366,13 +366,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-          registry-url: "https://registry.npmjs.org"
-        continue-on-error: false
 
       # Step 3: Install AWS CLI
       - name: Install AWS CLI
@@ -596,8 +589,71 @@ jobs:
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
           echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
           curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-         
-       
+
+      - name: cleanup docker images and containers
+        run: |
+          docker stop $(docker ps -a -q)
+          docker rm $(docker ps -a -q)
+          docker rmi $(docker images -q)
+
+        # Step 11: Generate CI/CD Flowchart
+      - name: Generate CI/CD flowchart
+        run: |
+          echo "Generating CI/CD flowchart..."
+          cat <<EOT > pipeline-flowchart.md
+          ```mermaid
+          graph TD
+            A[Push to GitHub] --> B[Build Stage]
+            B --> C[Test Stage]
+            C --> D[Deploy Stage]
+            D --> E[Notify Alertmanager]
+            E --> F[Pipeline Complete]
+          ```
+          EOT
+
+      # Step 12: Convert Flowchart to Image (Optional)
+      - name: Convert flowchart to image (using CLI tools)
+        run: |
+          sudo npm install -g @mermaid-js/mermaid-cli
+          mmdc -i pipeline-flowchart.md -o pipeline-flowchart.png
+
+      # Step 13: Upload Pipeline Flowchart
+      - name: Upload pipeline flowchart
+        uses: actions/upload-artifact@v3
+        with:
+          name: pipeline-flowchart
+          path: |
+            pipeline-flowchart.md
+            pipeline-flowchart.png
+      
+            
+      - name: Create a file
+        run: echo "I won't live long" > my_file.txt
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+              name: my-artifact
+              path: my_file.txt
+              retention-days: 90
+              
+      # Example Step: Generate Files
+      - name: Generate Output Files
+        run: |
+          mkdir -p path/output
+          echo "This is a test file" > path/output/test.txt
+          echo "This is a production file" > path/output/.production.env
+
+      # Upload Artifact with Exclusions
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          include-hidden-files: true
+          path: |
+            path/output/             # Upload all files in path/output/
+            !path/output/.production.env  # Exclude the .production.env file
+
+
       # Step 7: Send Email Notification for Deployment Success
       - name: Send Email Notification for Deployment Success
         uses: dawidd6/action-send-mail@v3
@@ -611,11 +667,20 @@ jobs:
           to: kingsamuel412@gmail.com
           from: ${{ secrets.EMAIL_USERNAME }}
 
-      - name: cleanup docker images and containers
-        run: |
-          docker stop $(docker ps -a -q)
-          docker rm $(docker ps -a -q)
-          docker rmi $(docker images -q)
+      # Step 3: Send Slack Notification
+      - name: Send Slack Notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: |
+            { "custom": "Deployment completed successfully." }
+          color: good
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+
+
+            
+
         
 
 
