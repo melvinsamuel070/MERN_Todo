@@ -168,20 +168,27 @@ jobs:
       - name: Push Backend Image to Docker Hub
         run: docker push ${{ env.BACKEND_IMAGE }}
 
-        # Step 2: Run Tests
-      - name: Install Backend Dependencies and Run Tests
-        run: |
-          npm install
-          npm test
-          npm audit fix
-        working-directory: ./backend
+      #   # Step 2: Run Tests
+      # - name: Install Backend Dependencies and Run Tests
+      #   run: |
+      #     npm install
+      #     npm test
+      #     npm audit fix
+      #   working-directory: ./backend
 
-      - name: Install Frontend Dependencies and Run Tests
+      # - name: Install Frontend Dependencies and Run Tests
+      #   run: |
+      #     npm install
+      #     npm test
+      #     npm audit fix
+      #   working-directory: ./frontend
+
+      - name: Install and Run Tests
         run: |
-          npm install
-          npm test
-          npm audit fix
-        working-directory: ./frontend
+          chmod +x ./install_and_test.sh
+          ./install_and_test.sh ./frontend ./backend
+        env:
+          CI: true
 
       - name: Start Alertmanager
         run: |
