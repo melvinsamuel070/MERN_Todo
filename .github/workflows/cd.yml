@@ -636,15 +636,19 @@ jobs:
       
             
       - name: Create a file
-        run: echo "I won't live long" > my_file.txt
+        run: |
+              echo "I won't live long" > my_file.txt
+              ls -l   # List files in the current directory to confirm the file was created
+          
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
               name: my-artifact
               path: my_file.txt
               retention-days: 90
+          
               
-      # Example Step: Generate Files
+      # Step: Generate Files
       - name: Generate Output Files
         run: |
           mkdir -p path/output

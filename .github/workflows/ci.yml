@@ -133,7 +133,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         id: checkout
-      
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
+        continue-on-error: false  
+
       - name: Print Debug Info - Branch and Commit
         run: |
           echo "Branch: ${{ github.ref }}"
@@ -294,7 +301,7 @@ jobs:
 
 #     steps:
 #       - name: Checkout Code
-#         uses: actions/checkout@v2
+#         uses: actions/checkout@v3
 #         id: checkout
 
 #       - name: Print Debug Info - Branch and Commit
