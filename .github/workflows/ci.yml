@@ -166,12 +166,14 @@ jobs:
         run: |
           npm install
           npm test
+          npm audit fix
         working-directory: ./backend
 
       - name: Install Frontend Dependencies and Run Tests
         run: |
           npm install
           npm test
+          npm audit fix
         working-directory: ./frontend
 
       - name: Start Alertmanager
