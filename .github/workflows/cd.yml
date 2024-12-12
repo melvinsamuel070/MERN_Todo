@@ -667,15 +667,19 @@ jobs:
           to: kingsamuel412@gmail.com
           from: ${{ secrets.EMAIL_USERNAME }}
 
-      # Step 3: Send Slack Notification
-      - name: Send Slack Notification
+      - name: Send Slack Notification for Deployment Success
         uses: 8398a7/action-slack@v3
         with:
-          status: custom
-          fields: |
-            { "custom": "Deployment completed successfully." }
-          color: good
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+            status: custom
+            fields: |
+              { "custom": "Deployment completed successfully." }
+            custom_payload: '{"text": "Deployment completed successfully", "color": "good"}'  # Custom message with color
+            channel: ${{ secrets.SLACK_CHANNEL }}  # Specify your Slack channel here
+            author_name: 8398a7@action-slack
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+            SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  # Make sure this secret is added in GitHub Secrets
+        
       
 
 

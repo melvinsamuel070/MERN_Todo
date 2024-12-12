@@ -164,15 +164,11 @@ jobs:
         # Step 2: Run Tests
       - name: Install Backend Dependencies and Run Tests
         run: |
-          cd backend
-          npm install
           npm test
         working-directory: ./backend
 
       - name: Install Frontend Dependencies and Run Tests
         run: |
-          cd frontend
-          npm install
           npm test
         working-directory: ./frontend
 
