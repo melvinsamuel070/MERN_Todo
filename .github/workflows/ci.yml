@@ -134,12 +134,12 @@ jobs:
         uses: actions/checkout@v4
         id: checkout
       # Step 2: Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-          registry-url: "https://registry.npmjs.org"
-        continue-on-error: false  
+      # - name: Set up Node.js
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: "18"
+      #     registry-url: "https://registry.npmjs.org"
+      #   continue-on-error: false  
 
       - name: Print Debug Info - Branch and Commit
         run: |
@@ -183,13 +183,44 @@ jobs:
       #     npm audit fix
       #   working-directory: ./frontend
 
-      - name: Install and Run Tests
-        run: |
-          chmod +x ./install_and_test.sh
-          ./install_and_test.sh ./frontend ./backend
-        env:
-          CI: true
+      # - name: Install and Run Tests
+      #   run: |
+      #     chmod +x ./install_and_test.sh
+      #     ./install_and_test.sh ./frontend ./backend
+      #   env:
+      #     CI: true
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' # Adjust to your desired Python version
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt  # Install any Python dependencies (if needed)
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18' # Adjust this version as needed
+
+      - name: Install dependencies for frontend
+        run: |
+          cd ./frontend
+          npm install
+
+      - name: Install dependencies for backend
+        run: |
+          cd ./backend
+          npm install
+
+      - name: Run Test Automation Script
+        run: |
+          python3 setup_tests.py ./frontend ./backend
+
+          
+        
       - name: Start Alertmanager
         run: |
           docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
