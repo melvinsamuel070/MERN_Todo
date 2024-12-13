@@ -212,12 +212,8 @@ jobs:
 
       - name: Run Test Automation Script
         run: |
-            python3 path/to/setup_tests.py ./frontend ./backend
-        
-
-
-          
-        
+            python3 ./setup_tests.py ./frontend ./backend
+       
       - name: Start Alertmanager
         run: |
           docker run -d -p 9092:9093 --name alertmanager prom/alertmanager:v0.27.0
