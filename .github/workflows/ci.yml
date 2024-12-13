@@ -195,14 +195,6 @@ jobs:
         with:
           python-version: '3.10' # Adjust to your desired Python version
 
-      - name: Install Python dependencies
-        run: |
-            python3 -m pip install --upgrade pip
-            pip install -r requirements.txt  # Ensure this file exists
-  
-
-
-
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -221,6 +213,7 @@ jobs:
       - name: Run Test Automation Script
         run: |
           python3 setup_tests.py ./frontend ./backend
+
 
           
         
@@ -305,6 +298,12 @@ jobs:
           path: |
             pipeline-flowchart.md
             pipeline-flowchart.png
+
+      - name: Upload Test Logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-logs
+          path: test_log_*.log
 
 
   trigger_cd:
