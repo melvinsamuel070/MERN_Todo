@@ -141,10 +141,10 @@ jobs:
          continue-on-error: false  
 
       - name: Build Backend Image
-        run: docker build -t ${{ env.BACKEND_IMAGE }} .
+        run: docker build -t ${{ env.BACKEND_IMAGE }} /
 
       - name: Build Frontend Image
-        run: docker build -t ${{ env.FRONTEND_IMAGE }} .
+        run: docker build -t ${{ env.FRONTEND_IMAGE }} /
 
       - name: Upload Build Logs
         if: always()
