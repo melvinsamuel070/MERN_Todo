@@ -122,8 +122,8 @@ on:
       - master
       
 env:
-  BACKEND_IMAGE: melvinsamuel070/backend:latest
-  FRONTEND_IMAGE: melvinsamuel070/frontend1:latest
+  BACKEND_IMAGE: melvinsamuel070/backend:latest .
+  FRONTEND_IMAGE: melvinsamuel070/frontend1:latest .
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
 
 jobs:
