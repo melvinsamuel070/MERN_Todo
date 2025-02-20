@@ -1,20 +1,26 @@
 groups:
-  - name: service_health_alerts
+  - name: test-alerts
     rules:
-      - alert: FrontendDown
-        expr: up{job="mern_todo-frontend-1"} == 0
-        for: 5m
-        labels:
-          severity: critical
+      - alert: PrometheusDown
+        expr: up == 0
+        for: 1m
         annotations:
-          summary: "Frontend service is down"
-          description: "The frontend service has been down for more than 5 minutes."
+          summary: "Prometheus instance is down!"
+
+      - alert: FrontendDown
+        expr: up == 0
+        for: 1m
+        annotations:
+          summary: "Frontend service is down!"
 
       - alert: BackendDown
-        expr: up{job="mern_todo-backend-1"} == 0
-        for: 5m
-        labels:
-          severity: critical
+        expr: up == 0
+        for: 1m
         annotations:
-          summary: "Backend service is down"
-          description: "The backend service has been down for more than 5 minutes."
+          summary: "Backend service is down!"    
+
+      
+      
+
+      
+      

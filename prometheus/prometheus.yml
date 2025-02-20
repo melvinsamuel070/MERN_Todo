@@ -1,57 +1,86 @@
-global:
-  scrape_interval: 15s  # How frequently to scrape targets
-  evaluation_interval: 10s  # How frequently to evaluate rules
+# global:
+#   scrape_interval: 15s  # How frequently to scrape targets
+#   evaluation_interval: 10s  # How frequently to evaluate rules
 
-rule_files:
-  - rules.yml  # External rules file
+# rule_files:
+#   - rules.yml  # External rules file
+
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#             - 'mern_todo-alertmanager-1:9092'  # Pointing to the Alertmanager container
+
+# scrape_configs:
+#   # Scrape configuration for Prometheus itself
+#   - job_name: mern_todo-prometheus-1
+#     static_configs:
+#       - targets:
+#           - 'mern_todo-prometheus-1:9090'  # Monitoring Prometheus
+
+#   # Scrape configuration for Node Exporter (system-level metrics)
+#   - job_name: mern_todo-node-exporter-1
+#     static_configs:
+#       - targets:
+#           - 'mern_todo-node-exporter-1:9100'  # Monitoring Node Exporter
+
+#   # Scrape configuration for the backend application (including health metrics)
+#   - job_name: mern_todo-backend-1
+#     static_configs:
+#       - targets:
+#           - 'mern_todo-backend-1:3500'  # Monitoring the backend service
+#     metrics_path: /metrics  # Ensure the backend exposes Prometheus-compatible metrics
+#     relabel_configs:
+#       - source_labels: [__address__]
+#         target_label: instance
+
+#   # Scrape configuration for frontend application (including health metrics)
+#   - job_name: mern_todo-frontend-1
+#     static_configs:
+#       - targets:
+#           - 'mern_todo-frontend-1:3000'  # Monitoring the frontend service
+#     metrics_path: /metrics  # Ensure the frontend exposes Prometheus-compatible metrics
+#     relabel_configs:
+#       - source_labels: [__address__]
+#         target_label: instance
+
+#   # # Scrape configuration for MongoDB Exporter (MongoDB metrics)
+#   # - job_name: mern_todo_app-mongo-exporter-1
+#   #   static_configs:
+#   #     - targets:
+#   #         - 'portainer:9216'  # Monitoring MongoDB Exporter
+
+#   # Scrape configuration for Push Gateway
+#   - job_name: mern_todo-pushgateway-1
+#     static_configs:
+#       - targets:
+#           - 'mern_todo-pushgateway-1:9091'  # Monitoring Push Gateway
+
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - 'mern_todo-alertmanager-1:9092'  # Pointing to the Alertmanager container
+            - "mern_todo-alertmanager-1:9092"  # Update with AlertManager's address if not on localhost
+
+rule_files:
+  - "rules.yml"  # Ensure this points to your rules file
 
 scrape_configs:
-  # Scrape configuration for Prometheus itself
-  - job_name: mern_todo-prometheus-1
+  - job_name: "mern_todo-prometheus-1"
     static_configs:
-      - targets:
-          - 'mern_todo-prometheus-1:9090'  # Monitoring Prometheus
-
-  # Scrape configuration for Node Exporter (system-level metrics)
-  - job_name: mern_todo-node-exporter-1
-    static_configs:
-      - targets:
-          - 'mern_todo-node-exporter-1:9100'  # Monitoring Node Exporter
+      - targets: ["mern_todo-prometheus-1:9090"]
 
   # Scrape configuration for the backend application (including health metrics)
-  - job_name: mern_todo-backend-1
+  - job_name: "mern_todo-backend-1"
     static_configs:
       - targets:
           - 'mern_todo-backend-1:3500'  # Monitoring the backend service
-    metrics_path: /metrics  # Ensure the backend exposes Prometheus-compatible metrics
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-
-  # Scrape configuration for frontend application (including health metrics)
-  - job_name: mern_todo-frontend-1
+  
+  - job_name: "mern_todo-node-exporter-1"
     static_configs:
-      - targets:
-          - 'mern_todo-frontend-1:3000'  # Monitoring the frontend service
-    metrics_path: /metrics  # Ensure the frontend exposes Prometheus-compatible metrics
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-
-  # # Scrape configuration for MongoDB Exporter (MongoDB metrics)
-  # - job_name: mern_todo_app-mongo-exporter-1
-  #   static_configs:
-  #     - targets:
-  #         - 'portainer:9216'  # Monitoring MongoDB Exporter
-
-  # Scrape configuration for Push Gateway
-  - job_name: mern_todo-pushgateway-1
-    static_configs:
-      - targets:
-          - 'mern_todo-pushgateway-1:9091'  # Monitoring Push Gateway
+      - targets: ["mern_todo-node-exporter-1:9100"]
