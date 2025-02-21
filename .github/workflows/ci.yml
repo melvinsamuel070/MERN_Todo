@@ -168,7 +168,7 @@ jobs:
         # Step 2: Run Tests
       - name: Install Backend Dependencies and Run Tests
         run: |
-          npm install jest
+          npm run
           npm install --save-dev jest
           npm test
   
