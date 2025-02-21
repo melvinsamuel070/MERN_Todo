@@ -149,6 +149,12 @@ jobs:
       - name: Upload Build Logs
         if: always()
         uses: actions/upload-artifact@v4
+        with:
+         name: build-logs
+         path: |
+           backend/build.log
+           frontend/build.log
+         
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
