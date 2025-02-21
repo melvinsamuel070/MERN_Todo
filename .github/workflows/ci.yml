@@ -168,6 +168,8 @@ jobs:
         # Step 2: Run Tests
       - name: Install Backend Dependencies and Run Tests
         run: |
+          cd  backend
+          cd  frontend
           npm run
           npm install --save-dev jest
           npm test
