@@ -170,7 +170,7 @@ jobs:
         run: |
           npm install jest
           npm install --save-dev jest
-          npm run test
+          npm test
   
       # - name: Set up Python
       #   uses: actions/setup-python@v4
