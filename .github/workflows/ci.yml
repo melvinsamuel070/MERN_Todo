@@ -172,6 +172,7 @@ jobs:
           npm install --save-dev jest
           npm test
           cd ../frontend
+          npm install --save-dev @testing-library/react
           npm install --save-dev jest
           npm test
         working-directory: .
