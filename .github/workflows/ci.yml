@@ -166,14 +166,16 @@ jobs:
 
 
         # Step 2: Run Tests
-      - name: Install Backend Dependencies and Run Tests
+      - name: Install Dependencies and Run Tests (Frontend & Backend)
         run: |
-          cd  backend
-          cd  frontend
-          npm run
+          cd backend
           npm install --save-dev jest
           npm test
-  
+          cd ../frontend
+          npm install --save-dev jest
+          npm test
+        working-directory: .
+      
       # - name: Set up Python
       #   uses: actions/setup-python@v4
       #   with:
