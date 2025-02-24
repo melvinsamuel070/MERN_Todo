@@ -172,7 +172,7 @@ jobs:
           npm install --save-dev jest
           npm test
           cd ../frontend
-          npm get-update -y
+          npm get update -y
           npm update inflight glob
           npm install --save-dev @testing-library/react
           npm install --save-dev jest
