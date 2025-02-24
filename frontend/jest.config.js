@@ -3,7 +3,7 @@ module.exports = {
     "^.+\\.jsx?$": "babel-jest",
   },
   moduleNameMapper: {
-    "\\.(css|less|scss|sass)$": "<rootDir>/src/__mocks__/styleMock.js",
+    "\\.(css|less|scss|sass)$": "jest-transform-stub",
   },
-  testEnvironment: "jest-environment-jsdom",
+  testEnvironment: "jest-environment-jsdom",  // This ensures Jest uses JSDOM
 };
