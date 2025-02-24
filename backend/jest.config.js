@@ -3,5 +3,5 @@ module.exports = {
       "^.+\\.jsx?$": "babel-jest",
       "^.+\\.css$": "node-modules",
     },
-    testenvironment: 'jest-environment-jsdom', // Required for testing React components
+    testenvironment: 'jest-Environment-jsdom', // Required for testing React components
   };
