@@ -1,6 +1,6 @@
 *,
 ::after,
-::before{
+::before {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -13,7 +13,6 @@
   --Dark-Grayish-Blue: hsl(234, 11%, 52%);
   --Bright-Blue: hsl(220, 98%, 61%);
 
-  /* ### Dark Theme */
   --Light-Grayish-Blue-hover: hsl(236, 33%, 92%);
   --Very-Dark-Grayish-Blue1: hsl(237, 14%, 26%);
   --Light-Grayish: hsl(233, 11%, 84%);
@@ -21,7 +20,7 @@
 
 [data-theme='light']{
   --Very-Light-Grayish-Blue: hsl(236, 33%, 92%);
-  /* --Dark-Grayish-Blue: hsl(236, 9%, 61%); */
+
   --background: url(./assets/images/bg-desktop-light.jpg);
   --Very-Dark-Blue: hsl(0, 5%, 94%);
   --Very-Dark-Desaturated-Blue: hsl(0, 0%, 98%);
@@ -34,7 +33,6 @@
   --Very-Light-Gray: hsl(0, 0%, 98%);
   --Very-Light-Grayish-Blue: hsl(236, 33%, 92%);
   
-  /* --Very-Dark-Grayish-Blue: hsl(233, 14%, 35%); */
   --background: url(./assets/images/bg-desktop-dark.jpg);
   --Very-Dark-Blue: hsl(235, 21%, 11%);
   --Very-Dark-Desaturated-Blue: hsl(235, 24%, 19%);
@@ -63,7 +61,7 @@ img{
 
 .home{
   width: 100%;
-  /* max-width: 1440px; */
+
   margin: 0 auto;
 }
 
@@ -316,7 +314,6 @@ main{
   }
 }
 
-/* ====== loader spinner =========  */
 
 .loadingCenter{
   display: flex;
