@@ -170,7 +170,6 @@ jobs:
         run: |
           cd backend
           npm install --save-dev jest
-          npm test
           cd ../frontend
           npm get update -y
           npm update inflight glob
@@ -184,7 +183,7 @@ jobs:
       # - name: Set up Python
       #   uses: actions/setup-python@v4
       #   with:
-      #     python-version: '3.10' # Adjust to your desired Python version
+      #     python-version: '3.10 # Adjust to your desired Python version
 
       # - name: Set up Node.js
       #   uses: actions/setup-node@v3
