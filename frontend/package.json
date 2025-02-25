@@ -22,6 +22,8 @@
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "@testing-library/react": "^14.0.0"
+
+    
   },
   "scripts": {
     "start": "HOST=0.0.0.0 react-scripts start",
@@ -29,6 +31,12 @@
     "test": "jest",
     "eject": "react-scripts eject"
   },
+  "jest": {
+  "transform": {
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+  }
+}
+,
   "eslintConfig": {
     "extends": [
       "react-app",
