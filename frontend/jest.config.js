@@ -11,19 +11,18 @@
 module.exports = {
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/styleMock.js', // For CSS files
-    '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.js', // For images and SVGs
   },
   testEnvironment: 'jsdom',
 };
 
 
-module.exports = {
-  moduleNameMapper: {
-    '^axios$': '<rootDir>/__mocks__/axios.js', // Map axios to your combined mock file
-    '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/axios.js', // Map CSS files to the same mock file
-  },
-  transform: {
-    '^.+\\.jsx?$': 'babel-jest',
-  },
-  testEnvironment: 'jsdom',
-};
+// module.exports = {
+//   moduleNameMapper: {
+//     '^axios$': '<rootDir>/__mocks__/axios.js', // Map axios to your combined mock file
+//     '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/axios.js', // Map CSS files to the same mock file
+//   },
+//   transform: {
+//     '^.+\\.jsx?$': 'babel-jest',
+//   },
+//   testEnvironment: 'jsdom',
+// };
