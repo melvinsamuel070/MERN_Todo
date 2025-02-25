@@ -20,9 +20,18 @@
 // };
 
 
+// module.exports = {
+//   moduleNameMapper: {
+//     ".*": "<rootDir>/__mocks__/emptyMock.js"  // Redirect everything to an empty mock
+//   },
+//   testEnvironment: "jsdom",
+// };
+
 module.exports = {
   moduleNameMapper: {
-    ".*": "<rootDir>/__mocks__/emptyMock.js"  // Redirect everything to an empty mock
+    "^.+\\.(css|scss|sass|less|png|jpg|jpeg|gif|svg)$": "<rootDir>/__mocks__/emptyMock.js",
+    "^axios$": "<rootDir>/__mocks__/emptyMock.js",  // Ignore axios
+    "^react$": "<rootDir>/__mocks__/emptyMock.js"   // Ignore React
   },
   testEnvironment: "jsdom",
 };
