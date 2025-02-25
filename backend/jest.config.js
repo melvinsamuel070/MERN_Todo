@@ -10,11 +10,9 @@
   
 
 module.exports = {
+  testEnvironment: 'jsdom',
   transform: {
     "^.+\\.jsx?$": "babel-jest"
   },
-  transformIgnorePatterns: [
-    "/node_modules/(?!your-library-to-transform)/"
-  ],
-  testEnvironment: "jsdom"
+  setupFilesAfterEnv: ["@testing-library/jest-dom/extend-expect"]
 };

@@ -175,7 +175,7 @@ jobs:
           npm update inflight glob
           npm install --save-dev @testing-library/react
           npm install --save-dev jest
-          npm install --save-dev @babel/preset-env @babel/preset-react babel-jest
+          npm install --save-dev jest@27 jest-environment-jsdom@27
           npm test
         working-directory: .
       
