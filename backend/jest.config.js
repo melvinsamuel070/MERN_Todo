@@ -9,9 +9,12 @@
 //   };
   
 
-// jest.config.js
 module.exports = {
   transform: {
-    '\\.(jpg|jpeg|png|gif|svg)$': 'jest-transform-stub'
-  }
+    "^.+\\.jsx?$": "babel-jest"
+  },
+  transformIgnorePatterns: [
+    "/node_modules/(?!your-library-to-transform)/"
+  ],
+  testEnvironment: "jsdom"
 };
