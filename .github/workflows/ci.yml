@@ -176,7 +176,7 @@ jobs:
           npm install --save-dev @testing-library/react
           npm install --save-dev jest
           npm install --save-dev @babel/preset-react @babel/preset-env
-          npm install --save-dev identity-obj-proxy
+          npm install --save-dev jest-transform-stub
           npm test
         working-directory: .
       

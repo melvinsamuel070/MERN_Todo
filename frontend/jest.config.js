@@ -8,10 +8,17 @@
 //   testEnvironment: "jest-environment-jsdom",  // This ensures Jest uses JSDOM
 // };
 
+// // jest.config.js
+// module.exports = {
+//   // ... other config options ...
+//   moduleNameMapper: {
+//     '\\.(css)$': 'identity-obj-proxy'
+//   },
+// };
+
 // jest.config.js
 module.exports = {
-  // ... other config options ...
-  moduleNameMapper: {
-    '\\.(css)$': 'identity-obj-proxy'
-  },
+  transform: {
+    '\\.(jpg|jpeg|png|gif|svg)$': 'jest-transform-stub'
+  }
 };
