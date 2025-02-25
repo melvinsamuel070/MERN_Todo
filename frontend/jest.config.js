@@ -8,13 +8,21 @@
 //   testEnvironment: "jest-environment-jsdom",  // This ensures Jest uses JSDOM
 // };
 
+// module.exports = {
+//   transform: {
+//     "^.+\\.(js|jsx)$": "babel-jest"
+//   },
+//   moduleNameMapper: {
+//     "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/styleMock.js",
+//     "\\.(svg|jpg|jpeg|png|gif)$": "<rootDir>/__mocks__/fileMock.js"
+//   },
+//   testEnvironment: "jsdom",
+// };
+
+
 module.exports = {
-  transform: {
-    "^.+\\.(js|jsx)$": "babel-jest"
-  },
   moduleNameMapper: {
-    "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/styleMock.js",
-    "\\.(svg|jpg|jpeg|png|gif)$": "<rootDir>/__mocks__/fileMock.js"
+    ".*": "<rootDir>/__mocks__/emptyMock.js"  // Redirect everything to an empty mock
   },
   testEnvironment: "jsdom",
 };
