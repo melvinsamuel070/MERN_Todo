@@ -1,2 +1,2 @@
-// __mocks__/fileMock.js
-module.exports = 'test-file-stub';
+// __mocks__/styleMock.js
+module.exports = {};
