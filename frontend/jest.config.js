@@ -17,12 +17,13 @@ module.exports = {
     "\\.(svg|jpg|jpeg|png|gif|css|scss)$": "<rootDir>/__mocks__/fileMock.js"
   },
   testEnvironment: "jsdom",
-  extensionsToTreatAsEsm: [".jsx", ".js"],  // Treats JS files as ES modules
   globals: {
     "ts-jest": {
       useESM: true
     }
   }
 };
+
+
 
 
