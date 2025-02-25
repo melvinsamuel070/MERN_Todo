@@ -8,7 +8,7 @@
 //   testEnvironment: "jest-environment-jsdom",  // This ensures Jest uses JSDOM
 // };
 
-export default {
+module.exports = {
   transform: {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
