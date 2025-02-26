@@ -366,27 +366,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-
-      # Step 3: Install AWS CLI
-      - name: Install AWS CLI
-        run: |
-          sudo apt update
-          sudo apt install -y awscli
-      # Step 4: Configure AWS Credentials
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      # Step 5: Ensure AWS Configurations
-      - name: Ensure AWS Configurations
-        run: |
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws configure set region ${{ secrets.AWS_REGION }}
-      # Step 6: Set up SSH Key
       - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
@@ -398,6 +377,14 @@ jobs:
           ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
         env:
           INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
+
+
+      - name: awscli installation
+        uses: aws-actions/setup-aws-cli@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }} 
 
       - name: deployement begings from here
         run: | 
