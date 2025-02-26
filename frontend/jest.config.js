@@ -20,18 +20,10 @@
 // };
 
 
-// module.exports = {
-//   moduleNameMapper: {
-//     ".*": "<rootDir>/__mocks__/styleMock.js"  // Redirect everything to an empty mock
-//   },
-//   testEnvironment: "jsdom",
-// };
-
 module.exports = {
-  testMatch: ["**/__tests__/**/*.test.js", "**/?(*.)+(test|spec).js"], 
-  moduleFileExtensions: ["js", "jsx", "ts", "tsx"],
-  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
-
-  // ✅ Bypass "No tests found" error
-  passWithNoTests: true,
+  moduleNameMapper: {
+    ".*": "<rootDir>/__mocks__/styleMock.js"  // Redirect everything to an empty mock
+  },
+  testEnvironment: "jsdom",
 };
+

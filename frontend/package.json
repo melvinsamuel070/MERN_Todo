@@ -22,13 +22,11 @@
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "@testing-library/react": "^14.0.0"
-
-    
   },
   "scripts": {
     "start": "HOST=0.0.0.0 react-scripts start",
     "build": "react-scripts build",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
