@@ -374,8 +374,8 @@ jobs:
       # Step 7: Test SSH Connection
       - name: Test SSH Connection
         run: |
-          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'
-
+         ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+         
       - name: deployement begings from here
         run: | 
           echo "deployement begings from here"
