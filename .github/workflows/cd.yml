@@ -368,7 +368,7 @@ jobs:
 
       # Step 2: Set up Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
           registry-url: "https://registry.npmjs.org"
@@ -505,56 +505,14 @@ jobs:
       # Step 9: Configure Nginx Reverse Proxy
       - name: installation of nginx and configuration certificate 
         run: |
-         sudo dpkg --configure -a
-         # Update package lists and install Nginx
-         sudo apt-get update
-         sudo apt-get install -y nginx
-         # Install Certbot and Nginx plugin for SSL certificate management
-          # sudo apt-get install -y certbot python3-certbot-nginx
-         # Enable and start Nginx service
-         sudo systemctl enable nginx
-         sudo systemctl start nginx
-         # Obtain SSL certificate with Certbot
-          # sudo certbot --nginx -d ${{ secrets.DOMAIN_NAME }} --non-interactive --agree-tos --email ${{ secrets.EMAIL }}
-         # Test Nginx configuration
-           sudo nginx -t
-          # Reload Nginx service to apply changes
-           sudo systemctl reload nginx
+         sudo apt install nginx -y
+         sudo apt install certbot python3-certbot-nginx -y
         
            
       - name: Configure Nginx Reverse Proxy
         run: |
              DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
              FRONTEND_PORT="${{ secrets.FRONTEND_PORT }}"
-             BACKEND_PORT="${{ secrets.BACKEND_PORT }}"
-             
-             echo "Configuring Nginx for domain: $DOMAIN_NAME"
-         
-             # Write Nginx configuration
-                sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
-             server {
-                 listen 80;
-             server_name $DOMAIN_NAME;
-         
-             location / {
-                 proxy_pass http://${{ secrets.INSTANCE_IP }}:$FRONTEND_PORT;
-                 proxy_set_header Host \$host;
-                 proxy_set_header X-Real-IP \$remote_addr;
-                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-             }
-         
-             location /api/ {
-                 proxy_pass http://${{ secrets.INSTANCE_IP }}:$BACKEND_PORT;
-                 proxy_set_header Host \$host;
-                 proxy_set_header X-Real-IP \$remote_addr;
-                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-             }
-             }
-             EOL
-         
-             # Test and reload Nginx
-             sudo nginx -t
-             sudo systemctl reload nginx
          
          
           
@@ -627,7 +585,7 @@ jobs:
 
       # Step 13: Upload Pipeline Flowchart
       - name: Upload pipeline flowchart
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pipeline-flowchart
           path: |

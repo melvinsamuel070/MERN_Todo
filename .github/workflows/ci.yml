@@ -480,14 +480,14 @@ jobs:
 #           to: kingsamuel412@gmail.com
 #           from: ${{ secrets.EMAIL_USERNAME }}
 
-  trigger_cd:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger CD Pipeline
-        run: |
-          echo "Triggering CD pipeline..."
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"event_type": "start_cd_pipeline"}' \
-            "https://api.github.com/repos/${{ github.repository }}/dispatches" || { echo "Failed to trigger CD pipeline"; exit 1; }
+  # trigger_cd:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Trigger CD Pipeline
+  #       run: |
+  #         echo "Triggering CD pipeline..."
+  #         curl -X POST \
+  #           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+  #           -d '{"event_type": "start_cd_pipeline"}' \
+  #           "https://api.github.com/repos/${{ github.repository }}/dispatches" || { echo "Failed to trigger CD pipeline"; exit 1; }
