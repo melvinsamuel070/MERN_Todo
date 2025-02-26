@@ -366,14 +366,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          registry-url: "https://registry.npmjs.org"
-        continue-on-error: false  
-
 
       # Step 3: Install AWS CLI
       - name: Install AWS CLI
@@ -429,6 +421,13 @@ jobs:
             sudo apt-get install npm -y 
           EOF
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
+        continue-on-error: false  
+    
       - name: cloning the repository
         run: |
            sudo git clone https://github.com/melvinsamuel070/MERN_Todo.git 
