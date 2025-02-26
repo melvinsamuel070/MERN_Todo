@@ -365,10 +365,6 @@ jobs:
       # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
-         
-      - name: Configure AWS credentials
-        uses: aws-actions/setup-aws-cli@v3
-      
 
       - name: Set up SSH Key
         run: |
