@@ -382,13 +382,6 @@ jobs:
           INSTANCE_IP: ${{ secrets.INSTANCE_IP }}
 
 
-      - name: awscli installation
-        uses: aws-actions/setup-aws-cli@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }} 
-
       - name: deployement begings from here
         run: | 
           echo "deployement begings from here"
