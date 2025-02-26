@@ -20,27 +20,21 @@
 // };
 
 
-module.exports = {
-  moduleNameMapper: {
-    ".*": "<rootDir>/__mocks__/styleMock.js"  // Redirect everything to an empty mock
-  },
-  testEnvironment: "jsdom",
-};
-
 // module.exports = {
 //   moduleNameMapper: {
-//     // Mock styles
-//     "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/styleMock.js",
-
-//     // Mock image files
-//     "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
-
-//     // Mock all modules inside `frontend/__mocks__`
-//     "^@/utils/(.*)$": "<rootDir>/__mocks__/styleMock.js",  
-//     "^@/components/(.*)$": "<rootDir>/__mocks__/styleMock.js",
-//     "^@/services/(.*)$": "<rootDir>/__mocks__/styleMock.js",
-
-//     // Optional: Mock everything else (but be careful!)
-//     // ".*": "<rootDir>/__mocks__/emptyMock.js",  // ❌ Can break Jest!
+//     ".*": "<rootDir>/__mocks__/styleMock.js"  // Redirect everything to an empty mock
 //   },
+//   testEnvironment: "jsdom",
 // };
+
+module.exports = {
+  moduleNameMapper: {
+    "\\.(css|scss|sass|less)$": "<rootDir>/__mocks__/styleMock.js", // Mock CSS files
+    "\\.(png|jpg|jpeg|gif|svg)$": "<rootDir>/__mocks__/fileMock.js", // Mock images
+  },
+  transform: {
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest", // Ensure JavaScript files are transformed properly
+  },
+  testEnvironment: "jsdom",
+  transformIgnorePatterns: ["/node_modules/(?!axios)/"], // Allow axios to be transformed
+};
