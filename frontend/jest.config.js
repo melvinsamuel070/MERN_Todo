@@ -29,9 +29,11 @@
 
 module.exports = {
   moduleNameMapper: {
-    "^.+\\.(css|scss|sass|less|png|jpg|jpeg|gif|svg)$": "<rootDir>/__mocks__/emptyMock.js",
-    "^axios$": "<rootDir>/__mocks__/emptyMock.js",  // Ignore axios
-    "^react$": "<rootDir>/__mocks__/emptyMock.js"   // Ignore React
+    "\\.(css|scss|sass|less|png|jpg|jpeg|gif|svg)$": "<rootDir>/__mocks__/emptyMock.js",
+  },
+  transform: {
+    "^.+\\.(js|jsx|ts|tsx)$": ["babel-jest", { presets: ["@babel/preset-env", "@babel/preset-react"] }],
   },
   testEnvironment: "jsdom",
+  transformIgnorePatterns: ["/node_modules/(?!axios)/"], // Ensures axios is transformed
 };
