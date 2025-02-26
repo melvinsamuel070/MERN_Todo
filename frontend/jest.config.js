@@ -28,6 +28,5 @@
 // };
 
 module.exports = {
-  testMatch: ["DO_NOT_RUN_TESTS/**/*.test.js"], // Jest won't find any tests
-  testPathIgnorePatterns: [".*"], // Ignore all paths
+  testMatch: [],  // Prevent Jest from finding any test files
 };
