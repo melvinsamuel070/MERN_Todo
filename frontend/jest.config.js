@@ -28,6 +28,10 @@
 // };
 
 module.exports = {
-  testMatch: ["DO_NOT_RUN_TESTS/**/*.test.js"], // Jest won't find any tests
-  testPathIgnorePatterns: [".*"], // Ignore all paths
+  testMatch: ["**/__tests__/**/*.test.js", "**/?(*.)+(test|spec).js"], 
+  moduleFileExtensions: ["js", "jsx", "ts", "tsx"],
+  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+
+  // ✅ Bypass "No tests found" error
+  passWithNoTests: true,
 };
