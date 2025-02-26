@@ -250,7 +250,7 @@ jobs:
             password: ${{ secrets.EMAIL_PASSWORD }}
             subject: "Build Success: CI Pipeline"
             body: "The build stage of your CI pipeline completed successfully."
-            to: kingsamuel412@gmail.com
+            to: melvinsamuel070@gmail.com
             from: ${{ secrets.EMAIL_USERNAME }}
 
             # Step 11: Generate CI/CD Flowchart
