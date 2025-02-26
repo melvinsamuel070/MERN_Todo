@@ -20,20 +20,10 @@
 // };
 
 
-// module.exports = {
-//   moduleNameMapper: {
-//     ".*": "<rootDir>/__mocks__/emptyMock.js"  // Redirect everything to an empty mock
-//   },
-//   testEnvironment: "jsdom",
-// };
-
 module.exports = {
   moduleNameMapper: {
-    "\\.(css|scss|sass|less|png|jpg|jpeg|gif|svg)$": "<rootDir>/__mocks__/emptyMock.js",
-  },
-  transform: {
-    "^.+\\.(js|jsx|ts|tsx)$": ["babel-jest", { presets: ["@babel/preset-env", "@babel/preset-react"] }],
+    ".*": "<rootDir>/__mocks__/emptyMock.js"  // Redirect everything to an empty mock
   },
   testEnvironment: "jsdom",
-  transformIgnorePatterns: ["/node_modules/(?!axios)/"], // Ensures axios is transformed
 };
+
