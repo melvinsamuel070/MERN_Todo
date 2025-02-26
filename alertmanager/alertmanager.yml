@@ -91,7 +91,7 @@ global:
   smtp_smarthost: 'smtp.gmail.com:587'
   smtp_from: 'melvinsamuel070@gmail.com'
   smtp_auth_username: 'melvinsamuel070@gmail.com'
-  smtp_auth_password: 'dygc wdan sqar siby'
+  smtp_auth_password: 'aqeg lwnh ernq wvjm'
   smtp_require_tls: true
 
 route:
@@ -104,5 +104,5 @@ route:
 receivers:
   - name: 'email-alerts'
     email_configs:
-      - to: 'kingsamuel412@gmail.com'
+      - to: 'melvinsamuel070@gmail.com'
         send_resolved: true
