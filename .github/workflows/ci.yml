@@ -127,7 +127,7 @@ env:
   ALERTMANAGER_URL: http://localhost:9092/api/v2/alerts
 
 jobs:
-  build:
+  build_and_testin:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -173,8 +173,6 @@ jobs:
           cd ../frontend
           npm get update -y
           npm update inflight glob
-          
-          
           npm test
         working-directory: .
       
