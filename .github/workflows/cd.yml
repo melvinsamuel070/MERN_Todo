@@ -407,7 +407,7 @@ jobs:
     
       - name: cloning the repository
         run: |
-           sudo git clone https://github.com/melvinsamuel070/MERN_Todo.git 
+           sudo git clone https://github.com/melvinsamuel070/MERN_Todo.git MERN_Todo
            cd MERN_Todo
            sudo  docker compose up -d
   
@@ -471,11 +471,11 @@ jobs:
       #     echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
       #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
 
-      - name: cleanup docker images and containers
-        run: |
-          docker stop $(docker ps -a -q)
-          docker rm $(docker ps -a -q)
-          docker rmi $(docker images -q)
+      # - name: cleanup docker images and containers
+      #   run: |
+      #     docker stop $(docker ps -a -q)
+      #     docker rm $(docker ps -a -q)
+      #     docker rmi $(docker images -q)
 
         # Step 11: Generate CI/CD Flowchart
       - name: Generate CI/CD flowchart
