@@ -366,45 +366,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up SSH Key
+      - name: Deploy Image to EC2 Instance
         run: |
-          mkdir -p ~/.ssh  # Ensure the .ssh directory exists
-          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-      # Steps 7: Test SSH Connection
-      - name: Test SSH Connection
-        run: |
-         ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.INSTANCE_IP }} "echo 'SSH connection successful'"
+            echo "${{ secrets.EC2_KEY }}" > main-pro.pem
+            chmod 600 private-key.pem
+            ssh -o StrictHostKeyChecking=no -i main-pro.pem ubuntu@${{ secrets.INSTANCE_IP }} 
+            sudo apt-get update
 
       - name: deployement begings from here
         run: | 
           echo "deployement begings from here"
  
-          - name: Install Docker and Dependencies on EC2 Instance
-          run: |
-            set -x
-            sudo apt-get update -y
-            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-        
-            # Add Docker's official GPG key and repository
-            sudo install -m 0755 -d /etc/apt/keyrings
-            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-            sudo chmod a+r /etc/apt/keyrings/docker.asc
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        
-            # Install Docker
-            sudo apt-get update -y
-            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        
-            # Add the current user to the Docker group
-            sudo usermod -aG docker $USER
-        
-            # Install Docker Compose
-            sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-        
-            # Optional: Install npm if needed
-            sudo apt-get install -y npm
+      - name: Install Docker and Docker Compose
+        uses: ./.github/actions/install-docker
+
+      - name: Add user to Docker group
+        run: |
+          sudo usermod -aG docker $USER
+          sudo apt get install npm -y
 
       - name: cloning the repository
         run: |
