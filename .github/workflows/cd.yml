@@ -521,7 +521,7 @@ jobs:
               retention-days: 120
           
               
-      # Step: Generate Files
+      # Step: Generate File
       - name: Generate Output Files
         run: |
           mkdir -p path/output
