@@ -431,45 +431,45 @@ jobs:
          
          
           
-      - name: Notify Pushgateway about pipeline progress (start)
-        run: |
-          echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"start\"} 1\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-      - name: Deploy application
-        run: |
-          echo "Starting application deployment..."
-          docker compose up -d
-          echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-      - name: Notify Pushgateway about pipeline progress (deployment in progress)
-        run: |
-          echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment\"} 1\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-      - name: Notify Pushgateway about pipeline progress (configure AWS credentials)
-        run: |
-          echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"configure_aws_credentials\"} 1\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      # - name: Notify Pushgateway about pipeline progress (start)
+      #   run: |
+      #     echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"start\"} 1\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      # - name: Deploy application
+      #   run: |
+      #     echo "Starting application deployment..."
+      #     docker compose up -d
+      #     echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      # - name: Notify Pushgateway about pipeline progress (deployment in progress)
+      #   run: |
+      #     echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment\"} 1\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      # - name: Notify Pushgateway about pipeline progress (configure AWS credentials)
+      #   run: |
+      #     echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"configure_aws_credentials\"} 1\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
       
-      - name: Notify Pushgateway about pipeline completion
-        run: |
-          echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment_complete\"} 1\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-      - name: Notify Pushgateway about failure (if any)
-        if: failure()
-        run: |
-          echo -e "push_failure_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} 1\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      # - name: Notify Pushgateway about pipeline completion
+      #   run: |
+      #     echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"deployment_complete\"} 1\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      # - name: Notify Pushgateway about failure (if any)
+      #   if: failure()
+      #   run: |
+      #     echo -e "push_failure_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} 1\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
        
-      - name: Final Cleanup
-        run: |
-           echo "Running final cleanup tasks..."
+      # - name: Final Cleanup
+      #   run: |
+      #      echo "Running final cleanup tasks..."
        
-      - name: Final Push to Pushgateway (success)
-        run: |
-          echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"final_success\"} 1\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
-          echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
-          curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      # - name: Final Push to Pushgateway (success)
+      #   run: |
+      #     echo -e "status{job=\"cd-pipeline\", pipeline_stage=\"final_success\"} 1\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
+      #     echo -e "push_time_seconds{instance=\"${{ github.run_id }}\", job=\"cd-pipeline\"} $(date +%s)\n" | \
+      #     curl -X POST --data-binary @- "${{ secrets.PUSHGATEWAY_URL }}/metrics/job/cd-pipeline/instance/${{ github.run_id }}"
 
       - name: cleanup docker images and containers
         run: |
