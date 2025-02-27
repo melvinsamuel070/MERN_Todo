@@ -369,7 +369,7 @@ jobs:
       - name: Deploy Image to EC2 Instance
         run: |
             echo "${{ secrets.EC2_KEY }}" > main-pro.pem
-            chmod 600 private-key.pem
+            chmod 600 main-pro.pem
             ssh -o StrictHostKeyChecking=no -i main-pro.pem ubuntu@${{ secrets.INSTANCE_IP }} 
             sudo apt-get update
 
