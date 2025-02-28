@@ -397,9 +397,10 @@ jobs:
 
       - name: Cloning the repository
         run: |
-          set -e
-          git clone https://github.com/melvinsamuel070/MERN_Todo.git && cd MERN_Todo
+          ssh -o StrictHostKeyChecking=no -i main-pro.pem ubuntu@${{ secrets.INSTANCE_IP }} "
+          git clone https://github.com/melvinsamuel070/MERN_Todo.git && cd MERN_Todo && 
           sudo docker compose up -d
+          "
 
       # Step 8: Notify Success
       - name: Notify Success
