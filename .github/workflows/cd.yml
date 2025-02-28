@@ -393,12 +393,14 @@ jobs:
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             sudo usermod -aG docker $USER
             EOF
-
+      - name: git installation 
+        run: |
+           sudo apt update
+           sudo apt install git -y
 
       - name: cloning the repository
         run: |
-           git clone https://github.com/melvinsamuel070/MERN_Todo.git MERN_Todo
-           cd MERN_Todo
+           git clone https://github.com/melvinsamuel070/MERN_Todo.git && cd MERN_Todo
            sudo  docker compose up -d
   
 
